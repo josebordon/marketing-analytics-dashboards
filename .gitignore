@@ -1,8 +1,3 @@
 node_modules/
-dist/
-.observablehq/
 .DS_Store
 *.log
-
-# Keep parquet files (they are our data exports)
-# !src/data/*.parquet
