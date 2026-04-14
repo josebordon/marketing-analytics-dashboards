@@ -5,223 +5,76 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Marketing Performance — Weekly Summary</title>
 
-  <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.3.1/dist/css/tabulator_midnight.min.css">
-  <script src="https://unpkg.com/tabulator-tables@6.3.1/dist/js/tabulator.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-quartz.css">
   <script src="https://unpkg.com/papaparse@5.5.2/papaparse.min.js"></script>
 
   <style>
-    :root {
-      --bg: #0c0e14;
-      --surface: #141824;
-      --border: #2a3148;
-      --text: #e8ecf4;
-      --muted: #8b93a8;
-      --accent: #7c8cff;
-      --green: #34d399;
-      --red: #f87171;
-      --yellow: #f5a524;
-    }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: var(--bg);
-      color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1a1a2e;
+      background: #f8f9fb;
       padding: 32px 48px;
-      min-height: 100vh;
     }
 
-    h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; }
+    h1 { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
 
-    .subtitle {
-      color: var(--muted);
-      font-size: 0.9rem;
-      margin-bottom: 20px;
-    }
+    .subtitle { color: #6b7280; font-size: 0.88rem; margin-bottom: 20px; }
 
-    .subtitle code {
-      color: var(--accent);
-      background: #1c2130;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 0.85em;
-    }
-
-    nav {
-      margin-bottom: 24px;
-      display: flex;
-      gap: 8px;
-    }
+    nav { display: flex; gap: 6px; margin-bottom: 24px; }
 
     nav a {
-      display: inline-block;
-      padding: 8px 18px;
-      background: var(--surface);
-      color: var(--muted);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      text-decoration: none;
-      font-size: 0.85rem;
-      font-weight: 600;
+      padding: 7px 18px; border-radius: 6px; text-decoration: none;
+      font-size: 0.84rem; font-weight: 600;
+      border: 1px solid #e5e7eb; color: #6b7280; background: #fff;
       transition: all 0.15s;
     }
 
-    nav a:hover { color: var(--text); border-color: var(--accent); }
-    nav a.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+    nav a:hover { border-color: #4f46e5; color: #4f46e5; }
+    nav a.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
 
     .filters {
-      display: flex;
-      gap: 16px;
-      align-items: flex-end;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
+      display: flex; gap: 14px; align-items: flex-end;
+      margin-bottom: 18px; flex-wrap: wrap;
     }
 
-    .filter-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+    .fg { display: flex; flex-direction: column; gap: 3px; }
+
+    .fg label {
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;
+      color: #9ca3af; font-weight: 600;
     }
 
-    .filter-group label {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--muted);
-      font-weight: 600;
+    .fg select, .fg input[type="date"] {
+      border: 1px solid #e5e7eb; background: #fff; color: #1a1a2e;
+      padding: 7px 12px; border-radius: 6px; font-size: 0.84rem; min-width: 140px;
     }
 
-    .filter-group select, .filter-group input {
-      background: #1c2130;
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      min-width: 140px;
-    }
-
-    .filter-group select:focus, .filter-group input:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
+    .fg select:focus, .fg input:focus { outline: none; border-color: #4f46e5; }
 
     .status-bar {
-      display: flex;
-      gap: 24px;
-      align-items: center;
-      margin-bottom: 16px;
-      font-size: 0.85rem;
-      color: var(--muted);
+      display: flex; gap: 20px; align-items: center;
+      margin-bottom: 14px; font-size: 0.84rem; color: #6b7280;
     }
 
-    .status-bar .count { color: var(--accent); font-weight: 600; }
+    .status-bar .ct { color: #4f46e5; font-weight: 600; }
 
-    #loading {
-      text-align: center;
-      padding: 80px 0;
-      color: var(--muted);
-      font-size: 1.1rem;
-    }
+    #loading { text-align: center; padding: 80px 0; color: #9ca3af; font-size: 1rem; }
 
-    .spinner {
-      display: inline-block;
-      width: 24px;
-      height: 24px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-right: 10px;
-      vertical-align: middle;
-    }
+    .ag-theme-quartz { --ag-border-radius: 8px; }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .tabulator {
-      background: var(--surface) !important;
-      border: 1px solid var(--border) !important;
-      border-radius: 10px !important;
-      overflow: hidden;
-      font-size: 0.82rem !important;
-    }
-
-    .tabulator .tabulator-header {
-      background: #1a1f2e !important;
-      border-bottom: 1px solid var(--border) !important;
-    }
-
-    .tabulator .tabulator-header .tabulator-col {
-      background: transparent !important;
-      border-right: 1px solid var(--border) !important;
-    }
-
-    .tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-title {
-      color: var(--muted) !important;
-      font-weight: 600 !important;
-      font-size: 0.72rem !important;
-      text-transform: uppercase !important;
-      letter-spacing: 0.04em !important;
-    }
-
-    .tabulator .tabulator-header .tabulator-col-group .tabulator-col-group-cols {
-      border-top: 1px solid var(--border) !important;
-    }
-
-    .tabulator .tabulator-tableholder .tabulator-table .tabulator-row {
-      background: transparent !important;
-      border-bottom: 1px solid #1c2130 !important;
-    }
-
-    .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover {
-      background: rgba(124, 140, 255, 0.05) !important;
-    }
-
-    .tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell {
-      color: var(--text) !important;
-      border-right: 1px solid #1c2130 !important;
-      padding: 8px 12px !important;
-    }
-
-    .tabulator .tabulator-footer {
-      background: #1a1f2e !important;
-      border-top: 1px solid var(--border) !important;
-      color: var(--muted) !important;
-    }
-
-    .tabulator .tabulator-footer .tabulator-page {
-      background: var(--bg) !important;
-      border: 1px solid var(--border) !important;
-      color: var(--text) !important;
-      border-radius: 4px !important;
-      margin: 0 2px !important;
-    }
-
-    .tabulator .tabulator-footer .tabulator-page.active {
-      background: var(--accent) !important;
-      color: var(--bg) !important;
-      border-color: var(--accent) !important;
-    }
-
-    .tabulator .tabulator-footer .tabulator-page-size {
-      background: var(--bg) !important;
-      border: 1px solid var(--border) !important;
-      color: var(--text) !important;
-      border-radius: 4px !important;
-    }
-
-    .pct-positive { color: #34d399 !important; font-weight: 600; }
-    .pct-negative { color: #f87171 !important; font-weight: 600; }
-    .pct-neutral { color: #8b93a8 !important; }
+    .pct-up { color: #16a34a !important; font-weight: 600; }
+    .pct-down { color: #dc2626 !important; font-weight: 600; }
+    .pct-flat { color: #9ca3af !important; }
   </style>
 </head>
 <body>
 
   <h1>Marketing Performance — Weekly Summary</h1>
-  <div class="subtitle">
-    Grouped by BU &times; Acquisition Type &times; Week &mdash; with WoW, YoY, and vs Plan
-  </div>
+  <p class="subtitle">Grouped by BU &times; Acquisition Type &times; Week with WoW, YoY, and vs Plan</p>
 
   <nav>
     <a href="index.html">Raw Data</a>
@@ -229,210 +82,181 @@
   </nav>
 
   <div class="filters" id="filters" style="display:none">
-    <div class="filter-group">
+    <div class="fg">
       <label>BU</label>
-      <select id="f-bu"><option value="All">All</option></select>
+      <select id="f-bu"><option value="">All</option></select>
     </div>
-    <div class="filter-group">
+    <div class="fg">
       <label>Acquisition Type</label>
-      <select id="f-acq"><option value="All">All</option></select>
+      <select id="f-acq"><option value="">All</option></select>
     </div>
-    <div class="filter-group">
+    <div class="fg">
       <label>From</label>
       <input type="date" id="f-from">
     </div>
-    <div class="filter-group">
+    <div class="fg">
       <label>To</label>
       <input type="date" id="f-to">
     </div>
   </div>
 
-  <div class="status-bar" id="status-bar" style="display:none">
-    <span><span class="count" id="row-count">0</span> weekly groups</span>
+  <div class="status-bar" id="status" style="display:none">
+    <span><span class="ct" id="n-rows">0</span> weekly groups</span>
   </div>
 
-  <div id="loading"><span class="spinner"></span>Loading &amp; aggregating data&hellip;</div>
-  <div id="table"></div>
+  <div id="loading">Loading & aggregating…</div>
+  <div id="grid" class="ag-theme-quartz" style="height:calc(100vh - 290px);display:none"></div>
 
   <script>
-    const CSV_URL = "forecast_performance.csv";
-
     function weekOf(dateStr) {
       if (!dateStr) return null;
       const d = new Date(dateStr + "T00:00:00");
       const day = d.getDay();
       const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(d.setDate(diff));
-      return monday.toISOString().slice(0, 10);
+      return new Date(d.setDate(diff)).toISOString().slice(0, 10);
     }
 
-    function addWeeks(weekStr, n) {
-      const d = new Date(weekStr + "T00:00:00");
+    function addWeeks(w, n) {
+      const d = new Date(w + "T00:00:00");
       d.setDate(d.getDate() + n * 7);
       return d.toISOString().slice(0, 10);
     }
 
-    function fmtDollar(v) {
-      if (v == null || isNaN(v)) return "—";
-      return "$" + Math.round(v).toLocaleString();
-    }
-
-    function fmtNum(v) {
-      if (v == null || isNaN(v)) return "—";
-      return Math.round(v).toLocaleString();
-    }
-
-    function fmtPct(cell) {
-      const v = cell.getValue();
+    function pctCell(params, invert) {
+      const v = params.value;
       if (v == null || isNaN(v)) return "—";
       const s = (v >= 0 ? "+" : "") + (v * 100).toFixed(1) + "%";
-      const el = cell.getElement();
-      el.classList.remove("pct-positive", "pct-negative", "pct-neutral");
-      if (v > 0.005) el.classList.add("pct-positive");
-      else if (v < -0.005) el.classList.add("pct-negative");
-      else el.classList.add("pct-neutral");
+      const el = params.eGridCell;
+      el.classList.remove("pct-up", "pct-down", "pct-flat");
+      const positive = invert ? v < -0.005 : v > 0.005;
+      const negative = invert ? v > 0.005 : v < -0.005;
+      if (positive) el.classList.add("pct-up");
+      else if (negative) el.classList.add("pct-down");
+      else el.classList.add("pct-flat");
       return s;
     }
 
-    function fmtPctInverse(cell) {
-      const v = cell.getValue();
-      if (v == null || isNaN(v)) return "—";
-      const s = (v >= 0 ? "+" : "") + (v * 100).toFixed(1) + "%";
-      const el = cell.getElement();
-      el.classList.remove("pct-positive", "pct-negative", "pct-neutral");
-      if (v < -0.005) el.classList.add("pct-positive");
-      else if (v > 0.005) el.classList.add("pct-negative");
-      else el.classList.add("pct-neutral");
-      return s;
-    }
+    const dollarFmt = p => {
+      const v = p.value;
+      return v != null && !isNaN(v) ? "$" + Math.round(v).toLocaleString() : "—";
+    };
 
-    Papa.parse(CSV_URL, {
-      download: true,
-      header: true,
-      dynamicTyping: true,
-      skipEmptyLines: true,
-      complete: function(results) {
+    const numFmt = p => {
+      const v = p.value;
+      return v != null && !isNaN(v) ? Math.round(v).toLocaleString() : "—";
+    };
+
+    const cacFmt = p => {
+      const v = p.value;
+      return v != null && !isNaN(v) ? "$" + v.toFixed(2) : "—";
+    };
+
+    Papa.parse("forecast_performance.csv", {
+      download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
+      complete(results) {
         const raw = results.data;
 
-        // Aggregate: group by BU × acq_type × week
         const agg = {};
         for (const r of raw) {
           const week = weekOf(r.date_et);
           if (!week) continue;
           const key = `${r.BU || ""}||${r.acquisition_type || ""}||${week}`;
-          if (!agg[key]) {
-            agg[key] = {
-              bu: r.BU || "",
-              acq: r.acquisition_type || "",
-              week,
-              spend: 0, activations: 0,
-              plan_spend: 0, plan_activations: 0,
-            };
-          }
+          if (!agg[key]) agg[key] = { bu: r.BU || "", acq: r.acquisition_type || "", week, spend: 0, act: 0, plan_spend: 0, plan_act: 0 };
           agg[key].spend += (r.spend_usd_amt || 0);
-          agg[key].activations += (r.first_cashouts_y1_cnt || 0);
+          agg[key].act += (r.first_cashouts_y1_cnt || 0);
           agg[key].plan_spend += (r.planned_spend_usd_amt || 0);
-          agg[key].plan_activations += (r.planned_first_cashouts_y1_cnt || 0);
+          agg[key].plan_act += (r.planned_first_cashouts_y1_cnt || 0);
         }
 
         const grouped = Object.values(agg);
+        const lk = {};
+        for (const g of grouped) lk[`${g.bu}||${g.acq}||${g.week}`] = g;
 
-        // Build a lookup for WoW and YoY
-        const lookup = {};
-        for (const g of grouped) {
-          lookup[`${g.bu}||${g.acq}||${g.week}`] = g;
-        }
-
-        // Compute WoW, YoY, vs Plan
         const rows = grouped.map(g => {
-          const prevWeek = addWeeks(g.week, -1);
-          const yoyWeek = addWeeks(g.week, -52);
-          const prev = lookup[`${g.bu}||${g.acq}||${prevWeek}`];
-          const yoy = lookup[`${g.bu}||${g.acq}||${yoyWeek}`];
-
+          const pw = lk[`${g.bu}||${g.acq}||${addWeeks(g.week, -1)}`];
+          const yy = lk[`${g.bu}||${g.acq}||${addWeeks(g.week, -52)}`];
           return {
             ...g,
-            spend_wow: prev && prev.spend > 0 ? (g.spend - prev.spend) / prev.spend : null,
-            spend_yoy: yoy && yoy.spend > 0 ? (g.spend - yoy.spend) / yoy.spend : null,
+            cac: g.act > 0 ? g.spend / g.act : null,
+            spend_wow: pw?.spend > 0 ? (g.spend - pw.spend) / pw.spend : null,
+            spend_yoy: yy?.spend > 0 ? (g.spend - yy.spend) / yy.spend : null,
             spend_vs_plan: g.plan_spend > 0 ? (g.spend - g.plan_spend) / g.plan_spend : null,
-            act_wow: prev && prev.activations > 0 ? (g.activations - prev.activations) / prev.activations : null,
-            act_yoy: yoy && yoy.activations > 0 ? (g.activations - yoy.activations) / yoy.activations : null,
-            act_vs_plan: g.plan_activations > 0 ? (g.activations - g.plan_activations) / g.plan_activations : null,
-            cac: g.activations > 0 ? g.spend / g.activations : null,
+            act_wow: pw?.act > 0 ? (g.act - pw.act) / pw.act : null,
+            act_yoy: yy?.act > 0 ? (g.act - yy.act) / yy.act : null,
+            act_vs_plan: g.plan_act > 0 ? (g.act - g.plan_act) / g.plan_act : null,
           };
-        }).sort((a, b) => b.week.localeCompare(a.week) || a.bu.localeCompare(b.bu) || a.acq.localeCompare(b.acq));
+        });
 
         // Populate filters
         const bus = [...new Set(rows.map(r => r.bu))].filter(Boolean).sort();
         const acqs = [...new Set(rows.map(r => r.acq))].filter(Boolean).sort();
         const fBu = document.getElementById("f-bu");
         const fAcq = document.getElementById("f-acq");
-        bus.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; fBu.appendChild(o); });
-        acqs.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; fAcq.appendChild(o); });
+        bus.forEach(v => fBu.append(new Option(v, v)));
+        acqs.forEach(v => fAcq.append(new Option(v, v)));
 
         const weeks = rows.map(r => r.week).sort();
         document.getElementById("f-from").value = weeks[Math.max(0, weeks.length - 52)] || weeks[0];
-        document.getElementById("f-to").value = weeks[weeks.length - 1];
+        document.getElementById("f-to").value = weeks.at(-1);
 
         document.getElementById("loading").style.display = "none";
+        document.getElementById("grid").style.display = "block";
         document.getElementById("filters").style.display = "flex";
-        document.getElementById("status-bar").style.display = "flex";
+        document.getElementById("status").style.display = "flex";
 
-        const table = new Tabulator("#table", {
-          data: rows,
-          height: "calc(100vh - 280px)",
-          layout: "fitDataStretch",
-          pagination: true,
-          paginationSize: 50,
-          paginationSizeSelector: [25, 50, 100, 250],
-          movableColumns: true,
-          resizableColumns: true,
-          initialSort: [{column: "week", dir: "desc"}],
-          columnDefaults: { hozAlign: "right" },
-          columns: [
-            {title: "Week", field: "week", hozAlign: "left", frozen: true, width: 110},
-            {title: "BU", field: "bu", hozAlign: "left", frozen: true, width: 100},
-            {title: "Acq Type", field: "acq", hozAlign: "left", frozen: true, width: 100},
+        const gridApi = agGrid.createGrid(document.getElementById("grid"), {
+          rowData: rows,
+          defaultColDef: { sortable: true, resizable: true, minWidth: 80 },
+          columnDefs: [
+            { headerName: "Week", field: "week", pinned: "left", width: 110, sort: "desc" },
+            { headerName: "BU", field: "bu", pinned: "left", width: 100 },
+            { headerName: "Acq Type", field: "acq", pinned: "left", width: 105 },
             {
-              title: "Spend",
-              columns: [
-                {title: "Amount", field: "spend", formatter: cell => fmtDollar(cell.getValue()), sorter: "number", width: 120},
-                {title: "WoW", field: "spend_wow", formatter: fmtPctInverse, sorter: "number", width: 90},
-                {title: "YoY", field: "spend_yoy", formatter: fmtPctInverse, sorter: "number", width: 90},
-                {title: "vs Plan", field: "spend_vs_plan", formatter: fmtPctInverse, sorter: "number", width: 90},
+              headerName: "Spend",
+              children: [
+                { headerName: "Amount", field: "spend", valueFormatter: dollarFmt, type: "numericColumn", width: 120 },
+                { headerName: "WoW", field: "spend_wow", valueFormatter: p => pctCell(p, true), type: "numericColumn", width: 85 },
+                { headerName: "YoY", field: "spend_yoy", valueFormatter: p => pctCell(p, true), type: "numericColumn", width: 85 },
+                { headerName: "vs Plan", field: "spend_vs_plan", valueFormatter: p => pctCell(p, true), type: "numericColumn", width: 90 },
               ]
             },
             {
-              title: "Activations (Y1)",
-              columns: [
-                {title: "Count", field: "activations", formatter: cell => fmtNum(cell.getValue()), sorter: "number", width: 110},
-                {title: "WoW", field: "act_wow", formatter: fmtPct, sorter: "number", width: 90},
-                {title: "YoY", field: "act_yoy", formatter: fmtPct, sorter: "number", width: 90},
-                {title: "vs Plan", field: "act_vs_plan", formatter: fmtPct, sorter: "number", width: 90},
+              headerName: "Activations (Y1)",
+              children: [
+                { headerName: "Count", field: "act", valueFormatter: numFmt, type: "numericColumn", width: 110 },
+                { headerName: "WoW", field: "act_wow", valueFormatter: p => pctCell(p, false), type: "numericColumn", width: 85 },
+                { headerName: "YoY", field: "act_yoy", valueFormatter: p => pctCell(p, false), type: "numericColumn", width: 85 },
+                { headerName: "vs Plan", field: "act_vs_plan", valueFormatter: p => pctCell(p, false), type: "numericColumn", width: 90 },
               ]
             },
-            {title: "CAC", field: "cac", formatter: cell => { const v = cell.getValue(); return v != null ? "$" + v.toFixed(2) : "—"; }, sorter: "number", width: 90},
-            {title: "Plan Spend", field: "plan_spend", formatter: cell => fmtDollar(cell.getValue()), sorter: "number", width: 120},
-            {title: "Plan Acts", field: "plan_activations", formatter: cell => fmtNum(cell.getValue()), sorter: "number", width: 110},
+            { headerName: "CAC", field: "cac", valueFormatter: cacFmt, type: "numericColumn", width: 90 },
+            { headerName: "Plan Spend", field: "plan_spend", valueFormatter: dollarFmt, type: "numericColumn", width: 115 },
+            { headerName: "Plan Acts", field: "plan_act", valueFormatter: numFmt, type: "numericColumn", width: 105 },
           ],
-          dataFiltered: function(filters, rows) {
-            document.getElementById("row-count").textContent = rows.length.toLocaleString();
-          },
+          pagination: true,
+          paginationPageSize: 50,
+          paginationPageSizeSelector: [25, 50, 100, 250],
+          animateRows: false,
         });
 
-        document.getElementById("row-count").textContent = rows.length.toLocaleString();
+        document.getElementById("n-rows").textContent = rows.length.toLocaleString();
 
         function applyFilters() {
           const bu = fBu.value;
           const acq = fAcq.value;
           const from = document.getElementById("f-from").value;
           const to = document.getElementById("f-to").value;
-          const filters = [];
-          if (bu !== "All") filters.push({field: "bu", type: "=", value: bu});
-          if (acq !== "All") filters.push({field: "acq", type: "=", value: acq});
-          if (from) filters.push({field: "week", type: ">=", value: from});
-          if (to) filters.push({field: "week", type: "<=", value: to});
-          table.setFilter(filters);
+
+          gridApi.setGridOption("isExternalFilterPresent", () => true);
+          gridApi.setGridOption("doesExternalFilterPass", node => {
+            const d = node.data;
+            if (bu && d.bu !== bu) return false;
+            if (acq && d.acq !== acq) return false;
+            if (from && d.week < from) return false;
+            if (to && d.week > to) return false;
+            return true;
+          });
+          gridApi.onFilterChanged();
         }
 
         fBu.addEventListener("change", applyFilters);

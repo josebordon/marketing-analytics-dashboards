@@ -3,260 +3,131 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Marketing Performance</title>
+  <title>Marketing Performance — Raw Data</title>
 
-  <!-- Tabulator for interactive table -->
-  <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.3.1/dist/css/tabulator_midnight.min.css">
-  <script src="https://unpkg.com/tabulator-tables@6.3.1/dist/js/tabulator.min.js"></script>
-
-  <!-- Papa Parse for CSV -->
+  <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-theme-quartz.css">
   <script src="https://unpkg.com/papaparse@5.5.2/papaparse.min.js"></script>
 
   <style>
-    :root {
-      --bg: #0c0e14;
-      --surface: #141824;
-      --border: #2a3148;
-      --text: #e8ecf4;
-      --muted: #8b93a8;
-      --accent: #7c8cff;
-    }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: var(--bg);
-      color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1a1a2e;
+      background: #f8f9fb;
       padding: 32px 48px;
-      min-height: 100vh;
     }
 
-    h1 {
-      font-size: 1.6rem;
-      font-weight: 700;
-      margin-bottom: 4px;
+    h1 { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
+
+    .subtitle { color: #6b7280; font-size: 0.88rem; margin-bottom: 20px; }
+    .subtitle code { color: #4f46e5; background: #eef2ff; padding: 2px 6px; border-radius: 4px; font-size: 0.82em; }
+
+    nav { display: flex; gap: 6px; margin-bottom: 24px; }
+
+    nav a {
+      padding: 7px 18px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.84rem;
+      font-weight: 600;
+      border: 1px solid #e5e7eb;
+      color: #6b7280;
+      background: #fff;
+      transition: all 0.15s;
     }
 
-    .subtitle {
-      color: var(--muted);
-      font-size: 0.9rem;
-      margin-bottom: 24px;
-    }
-
-    .subtitle code {
-      color: var(--accent);
-      background: #1c2130;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 0.85em;
-    }
+    nav a:hover { border-color: #4f46e5; color: #4f46e5; }
+    nav a.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
 
     .status-bar {
-      display: flex;
-      gap: 24px;
-      align-items: center;
-      margin-bottom: 20px;
-      font-size: 0.85rem;
-      color: var(--muted);
+      display: flex; gap: 20px; align-items: center;
+      margin-bottom: 14px; font-size: 0.84rem; color: #6b7280;
     }
 
-    .status-bar .count {
-      color: var(--accent);
-      font-weight: 600;
-    }
+    .status-bar .ct { color: #4f46e5; font-weight: 600; }
 
-    #loading {
-      text-align: center;
-      padding: 80px 0;
-      color: var(--muted);
-      font-size: 1.1rem;
-    }
+    #loading { text-align: center; padding: 80px 0; color: #9ca3af; font-size: 1rem; }
 
-    .spinner {
-      display: inline-block;
-      width: 24px;
-      height: 24px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-right: 10px;
-      vertical-align: middle;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Tabulator overrides for our dark theme */
-    .tabulator {
-      background: var(--surface) !important;
-      border: 1px solid var(--border) !important;
-      border-radius: 10px !important;
-      overflow: hidden;
-      font-size: 0.82rem !important;
-    }
-
-    .tabulator .tabulator-header {
-      background: #1a1f2e !important;
-      border-bottom: 1px solid var(--border) !important;
-    }
-
-    .tabulator .tabulator-header .tabulator-col {
-      background: transparent !important;
-      border-right: 1px solid var(--border) !important;
-    }
-
-    .tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-title {
-      color: var(--muted) !important;
-      font-weight: 600 !important;
-      font-size: 0.72rem !important;
-      text-transform: uppercase !important;
-      letter-spacing: 0.04em !important;
-    }
-
-    .tabulator .tabulator-header .tabulator-col .tabulator-header-filter input {
-      background: var(--bg) !important;
-      border: 1px solid var(--border) !important;
-      color: var(--text) !important;
-      border-radius: 4px !important;
-      padding: 4px 8px !important;
-      font-size: 0.78rem !important;
-    }
-
-    .tabulator .tabulator-header .tabulator-col .tabulator-header-filter input::placeholder {
-      color: #555d75 !important;
-    }
-
-    .tabulator .tabulator-tableholder .tabulator-table .tabulator-row {
-      background: transparent !important;
-      border-bottom: 1px solid #1c2130 !important;
-    }
-
-    .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover {
-      background: rgba(124, 140, 255, 0.05) !important;
-    }
-
-    .tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell {
-      color: var(--text) !important;
-      border-right: 1px solid #1c2130 !important;
-      padding: 8px 12px !important;
-    }
-
-    .tabulator .tabulator-footer {
-      background: #1a1f2e !important;
-      border-top: 1px solid var(--border) !important;
-      color: var(--muted) !important;
-    }
-
-    .tabulator .tabulator-footer .tabulator-page {
-      background: var(--bg) !important;
-      border: 1px solid var(--border) !important;
-      color: var(--text) !important;
-      border-radius: 4px !important;
-      margin: 0 2px !important;
-    }
-
-    .tabulator .tabulator-footer .tabulator-page.active {
-      background: var(--accent) !important;
-      color: var(--bg) !important;
-      border-color: var(--accent) !important;
-    }
-
-    .tabulator .tabulator-footer .tabulator-page-size {
-      background: var(--bg) !important;
-      border: 1px solid var(--border) !important;
-      color: var(--text) !important;
-      border-radius: 4px !important;
-    }
+    .ag-theme-quartz { --ag-border-radius: 8px; }
   </style>
 </head>
 <body>
 
-  <h1>Marketing Performance Overview</h1>
-  <div class="subtitle">
-    Raw data from <code>rpt_marketing_performance_to_forecast_daily</code> &mdash; sortable, filterable, paginated
-  </div>
+  <h1>Marketing Performance</h1>
+  <p class="subtitle">Raw data from <code>rpt_marketing_performance_to_forecast_daily</code></p>
 
-  <nav style="margin-bottom:24px;display:flex;gap:8px">
-    <a href="index.html" style="display:inline-block;padding:8px 18px;background:var(--accent);color:var(--bg);border:1px solid var(--accent);border-radius:6px;text-decoration:none;font-size:0.85rem;font-weight:600">Raw Data</a>
-    <a href="summary.html" style="display:inline-block;padding:8px 18px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:6px;text-decoration:none;font-size:0.85rem;font-weight:600">Weekly Summary</a>
+  <nav>
+    <a href="index.html" class="active">Raw Data</a>
+    <a href="summary.html">Weekly Summary</a>
   </nav>
 
-  <div class="status-bar" id="status-bar" style="display:none">
-    <span><span class="count" id="row-count">0</span> rows loaded</span>
-    <span>Date range: <span class="count" id="date-range"></span></span>
-    <span>Showing: <span class="count" id="filtered-count">0</span> rows after filters</span>
+  <div class="status-bar" id="status" style="display:none">
+    <span><span class="ct" id="n-rows">0</span> rows</span>
+    <span>Date range: <span class="ct" id="dt-range"></span></span>
   </div>
 
-  <div id="loading"><span class="spinner"></span>Loading data&hellip;</div>
-  <div id="table"></div>
+  <div id="loading">Loading data…</div>
+  <div id="grid" class="ag-theme-quartz" style="height:calc(100vh - 210px);display:none"></div>
 
   <script>
-    const CSV_URL = "forecast_performance.csv";
-
-    function fmtDollar(cell) {
-      const v = cell.getValue();
+    function dollarFmt(p) {
+      const v = p.value;
       if (v == null || v === "" || isNaN(v)) return "—";
-      return "$" + Number(v).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+      return "$" + Math.round(Number(v)).toLocaleString();
     }
 
-    function fmtNum(cell) {
-      const v = cell.getValue();
+    function numFmt(p) {
+      const v = p.value;
       if (v == null || v === "" || isNaN(v)) return "—";
-      return Number(v).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+      return Number(v).toLocaleString(undefined, { maximumFractionDigits: 1 });
     }
 
-    function fmtDec(cell) {
-      const v = cell.getValue();
-      if (v == null || v === "" || isNaN(v)) return "—";
-      return Number(v).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    }
-
-    Papa.parse(CSV_URL, {
+    Papa.parse("forecast_performance.csv", {
       download: true,
       header: true,
       dynamicTyping: true,
       skipEmptyLines: true,
-      complete: function(results) {
-        document.getElementById("loading").style.display = "none";
-        document.getElementById("status-bar").style.display = "flex";
-
+      complete(results) {
         const data = results.data;
-        document.getElementById("row-count").textContent = data.length.toLocaleString();
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("grid").style.display = "block";
+        document.getElementById("status").style.display = "flex";
+        document.getElementById("n-rows").textContent = data.length.toLocaleString();
 
         const dates = data.map(d => d.date_et).filter(Boolean).sort();
-        document.getElementById("date-range").textContent = dates[0] + " → " + dates[dates.length - 1];
+        document.getElementById("dt-range").textContent = dates[0] + " → " + dates.at(-1);
 
-        const table = new Tabulator("#table", {
-          data: data,
-          height: "calc(100vh - 200px)",
-          layout: "fitDataStretch",
-          pagination: true,
-          paginationSize: 100,
-          paginationSizeSelector: [50, 100, 250, 500],
-          movableColumns: true,
-          resizableColumns: true,
-          initialSort: [{column: "date_et", dir: "desc"}],
-          columns: [
-            {title: "Date", field: "date_et", headerFilter: "input", width: 120, frozen: true},
-            {title: "BU", field: "BU", headerFilter: "input", width: 100},
-            {title: "Acq Type", field: "acquisition_type", headerFilter: "input", width: 110},
-            {title: "Segment", field: "finance_segment_id", headerFilter: "input", width: 90},
-            {title: "Product", field: "finance_product_name", headerFilter: "input", width: 140},
-            {title: "Installs", field: "installs_cnt", formatter: fmtDec, hozAlign: "right", sorter: "number", width: 110},
-            {title: "Sign-Ups", field: "sign_ups_cnt", formatter: fmtNum, hozAlign: "right", sorter: "number", width: 110},
-            {title: "Activations (Y1)", field: "first_cashouts_y1_cnt", formatter: fmtDec, hozAlign: "right", sorter: "number", width: 140},
-            {title: "Mature Acts (Y1)", field: "first_cashouts_mature_y1_cnt", formatter: fmtDec, hozAlign: "right", sorter: "number", width: 140},
-            {title: "Acts In-Month", field: "first_cashouts_in_month_cnt", formatter: fmtNum, hozAlign: "right", sorter: "number", width: 130},
-            {title: "Spend", field: "spend_usd_amt", formatter: fmtDollar, hozAlign: "right", sorter: "number", width: 120},
-            {title: "Est. Revenue", field: "estimated_future_revenue_amt", formatter: fmtDollar, hozAlign: "right", sorter: "number", width: 130},
-            {title: "Plan Spend", field: "planned_spend_usd_amt", formatter: fmtDollar, hozAlign: "right", sorter: "number", width: 120},
-            {title: "Plan Acts (Y1)", field: "planned_first_cashouts_y1_cnt", formatter: fmtDec, hozAlign: "right", sorter: "number", width: 130},
-            {title: "Plan In-Month", field: "planned_first_cashouts_in_month_cnt", formatter: fmtDec, hozAlign: "right", sorter: "number", width: 130},
-          ],
-          dataFiltered: function(filters, rows) {
-            document.getElementById("filtered-count").textContent = rows.length.toLocaleString();
+        agGrid.createGrid(document.getElementById("grid"), {
+          rowData: data,
+          defaultColDef: {
+            sortable: true, filter: true, resizable: true,
+            floatingFilter: true, minWidth: 90,
           },
+          columnDefs: [
+            { headerName: "Date", field: "date_et", pinned: "left", width: 120, filter: "agDateColumnFilter" },
+            { headerName: "BU", field: "BU", pinned: "left", width: 100 },
+            { headerName: "Acq Type", field: "acquisition_type", width: 110 },
+            { headerName: "Segment", field: "finance_segment_id", width: 100 },
+            { headerName: "Product", field: "finance_product_name", width: 150 },
+            { headerName: "Installs", field: "installs_cnt", valueFormatter: numFmt, type: "numericColumn", width: 110 },
+            { headerName: "Sign-Ups", field: "sign_ups_cnt", valueFormatter: numFmt, type: "numericColumn", width: 110 },
+            { headerName: "Activations (Y1)", field: "first_cashouts_y1_cnt", valueFormatter: numFmt, type: "numericColumn", width: 140 },
+            { headerName: "Mature Acts (Y1)", field: "first_cashouts_mature_y1_cnt", valueFormatter: numFmt, type: "numericColumn", width: 145 },
+            { headerName: "Acts In-Month", field: "first_cashouts_in_month_cnt", valueFormatter: numFmt, type: "numericColumn", width: 130 },
+            { headerName: "Spend", field: "spend_usd_amt", valueFormatter: dollarFmt, type: "numericColumn", width: 120 },
+            { headerName: "Est. Revenue", field: "estimated_future_revenue_amt", valueFormatter: dollarFmt, type: "numericColumn", width: 130 },
+            { headerName: "Plan Spend", field: "planned_spend_usd_amt", valueFormatter: dollarFmt, type: "numericColumn", width: 120 },
+            { headerName: "Plan Acts (Y1)", field: "planned_first_cashouts_y1_cnt", valueFormatter: numFmt, type: "numericColumn", width: 130 },
+            { headerName: "Plan In-Month", field: "planned_first_cashouts_in_month_cnt", valueFormatter: numFmt, type: "numericColumn", width: 135 },
+          ],
+          pagination: true,
+          paginationPageSize: 100,
+          paginationPageSizeSelector: [50, 100, 250, 500],
+          animateRows: false,
+          suppressMenuHide: true,
         });
       }
     });
