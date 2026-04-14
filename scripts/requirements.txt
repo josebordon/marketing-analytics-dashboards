@@ -1,0 +1,2 @@
+databricks-sql-connector>=3.0.0
+pyarrow>=14.0.0
