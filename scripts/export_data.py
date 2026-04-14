@@ -5,20 +5,15 @@ Usage:
     pip install -r scripts/requirements.txt
     python scripts/export_data.py
 
-Requires DATABRICKS_HOST and DATABRICKS_TOKEN env vars, or a configured
-~/.databrickscfg profile.
+Supports:
+  - databricks-cli auth (~/.databrickscfg with auth_type = databricks-cli)
+  - Personal access token (DATABRICKS_TOKEN env var)
+  - Any auth method supported by databricks-sdk
 """
 import os
 import sys
 import time
 from pathlib import Path
-
-try:
-    from databricks import sql as dbsql
-    import pyarrow.parquet as pq
-except ImportError:
-    print("Missing dependencies. Run: pip install -r scripts/requirements.txt")
-    sys.exit(1)
 
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "src" / "data"
 
@@ -64,36 +59,77 @@ WHERE DATE_TRUNC('month', date_est) >= '2024-01-01'
 GROUP BY 1,2,3,4,5,6,7,8,9,10,11
 """
 
+HTTP_PATH = "/sql/1.0/warehouses/6a2b398a53d1d612"
+
 
 def get_connection():
-    host = os.environ.get("DATABRICKS_HOST", "earnin-earnin-prod.cloud.databricks.com")
+    """Connect to Databricks using the best available auth method."""
     token = os.environ.get("DATABRICKS_TOKEN")
-    http_path = os.environ.get("DATABRICKS_HTTP_PATH", "/sql/1.0/warehouses/6a2b398a53d1d612")
+    host = os.environ.get("DATABRICKS_HOST", "earnin-earnin-prod.cloud.databricks.com")
+    http_path = os.environ.get("DATABRICKS_HTTP_PATH", HTTP_PATH)
 
-    if not token:
-        cfg_path = Path.home() / ".databrickscfg"
-        if cfg_path.exists():
-            import configparser
-            config = configparser.ConfigParser()
-            config.read(cfg_path)
-            profile = os.environ.get("DATABRICKS_PROFILE", "DEFAULT")
-            if profile in config:
-                host = config[profile].get("host", host).replace("https://", "")
-                token = config[profile].get("token", token)
+    if token:
+        from databricks import sql as dbsql
+        print(f"Auth: using DATABRICKS_TOKEN env var")
+        return dbsql.connect(
+            server_hostname=host,
+            http_path=http_path,
+            access_token=token,
+        )
 
-    if not token:
-        print("Error: No Databricks token found.")
-        print("Set DATABRICKS_TOKEN env var, or configure ~/.databrickscfg")
-        sys.exit(1)
+    try:
+        from databricks.sdk import WorkspaceClient
+        from databricks import sql as dbsql
 
-    return dbsql.connect(
-        server_hostname=host,
-        http_path=http_path,
-        access_token=token,
-    )
+        w = WorkspaceClient()
+        config = w.config
+        print(f"Auth: using databricks-sdk ({config.auth_type})")
+        print(f"Host: {config.host}")
+
+        def credential_provider():
+            header_factory = config.authenticate
+            def provide():
+                headers = header_factory()
+                return headers
+            return provide
+
+        return dbsql.connect(
+            server_hostname=config.host.replace("https://", ""),
+            http_path=http_path,
+            credentials_provider=credential_provider(),
+        )
+    except Exception as e:
+        print(f"databricks-sdk auth failed: {e}")
+        pass
+
+    cfg_path = Path.home() / ".databrickscfg"
+    if cfg_path.exists():
+        import configparser
+        config = configparser.ConfigParser()
+        config.read(cfg_path)
+        profile = os.environ.get("DATABRICKS_PROFILE", "DEFAULT")
+        if profile in config and "token" in config[profile]:
+            from databricks import sql as dbsql
+            h = config[profile].get("host", host).replace("https://", "")
+            t = config[profile]["token"]
+            print(f"Auth: using ~/.databrickscfg [{profile}] with PAT")
+            return dbsql.connect(
+                server_hostname=h,
+                http_path=http_path,
+                access_token=t,
+            )
+
+    print("Error: No Databricks credentials found.")
+    print("Options:")
+    print("  1. Set DATABRICKS_TOKEN env var")
+    print("  2. pip install databricks-sdk (uses databricks-cli auth)")
+    print("  3. Add token to ~/.databrickscfg")
+    sys.exit(1)
 
 
 def export_query(conn, name, query, output_path):
+    import pyarrow.parquet as pq
+
     print(f"\n{'='*60}")
     print(f"Exporting: {name}")
     print(f"Output:    {output_path}")
