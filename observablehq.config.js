@@ -7,7 +7,7 @@ export default {
     {
       name: "Dashboards",
       pages: [
-        {name: "Clean Data", path: "/clean-data-dashboard"},
+        {name: "Marketing Performance", path: "/marketing-performance"},
       ]
     }
   ],
