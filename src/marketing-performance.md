@@ -117,13 +117,16 @@ function fmtN(v) { return Math.round(v).toLocaleString(); }
 function fmtPct(v) { return v == null ? "" : (v > 0 ? "+" : "") + (v * 100).toFixed(1) + "% vs plan"; }
 
 function kpi(title, value, delta, color) {
+  const el = document.createElement("div");
+  el.className = "kpi-card";
   const deltaColor = delta == null ? "" : delta >= 0 ? "#34d399" : "#f87171";
   const deltaHtml = delta == null ? "" : `<div style="font-size:0.8rem;margin-top:4px;color:${deltaColor};font-weight:600">${fmtPct(delta)}</div>`;
-  return html`<div class="kpi-card">
+  el.innerHTML = `
     <div class="kpi-value" style="color:${color}">${value}</div>
     <div class="kpi-label">${title}</div>
     ${deltaHtml}
-  </div>`;
+  `;
+  return el;
 }
 ```
 
@@ -368,8 +371,11 @@ Plotly.newPlot(segChart, [{
 display(segChart);
 ```
 
-<p style="color: var(--muted); font-size: 0.78rem; margin-top: 24px;">
-Data: <code>${rows.length.toLocaleString()}</code> rows &bull;
-Showing: <code>${startDate}</code> to <code>${endDate}</code> &bull;
-Filtered: <code>${filtered.length.toLocaleString()}</code> rows
-</p>
+```js
+{
+  const footer = document.createElement("p");
+  footer.style.cssText = "color:#8b93a8;font-size:0.78rem;margin-top:24px";
+  footer.innerHTML = `Data: <code style="background:#1c2130;padding:2px 6px;border-radius:4px;color:#7c8cff">${rows.length.toLocaleString()}</code> rows &bull; Showing: <code style="background:#1c2130;padding:2px 6px;border-radius:4px;color:#7c8cff">${startDate}</code> to <code style="background:#1c2130;padding:2px 6px;border-radius:4px;color:#7c8cff">${endDate}</code> &bull; Filtered: <code style="background:#1c2130;padding:2px 6px;border-radius:4px;color:#7c8cff">${filtered.length.toLocaleString()}</code> rows`;
+  display(footer);
+}
+```
