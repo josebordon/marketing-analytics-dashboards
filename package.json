@@ -10,6 +10,7 @@
     "clean": "observable clean"
   },
   "dependencies": {
-    "@observablehq/framework": "^1.15.0"
+    "@observablehq/framework": "^1.15.0",
+    "d3-dsv": "^3.0.1"
   }
 }
