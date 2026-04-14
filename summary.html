@@ -16,65 +16,50 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: #1a1a2e;
-      background: #f8f9fb;
+      background: #fff;
       padding: 32px 48px;
     }
 
-    h1 { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
-
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 2px; }
     .subtitle { color: #6b7280; font-size: 0.88rem; margin-bottom: 20px; }
 
     nav { display: flex; gap: 6px; margin-bottom: 24px; }
-
     nav a {
       padding: 7px 18px; border-radius: 6px; text-decoration: none;
       font-size: 0.84rem; font-weight: 600;
       border: 1px solid #e5e7eb; color: #6b7280; background: #fff;
-      transition: all 0.15s;
     }
-
     nav a:hover { border-color: #4f46e5; color: #4f46e5; }
     nav a.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
 
-    .filters {
-      display: flex; gap: 14px; align-items: flex-end;
-      margin-bottom: 18px; flex-wrap: wrap;
-    }
-
+    .filters { display: flex; gap: 14px; align-items: flex-end; margin-bottom: 18px; flex-wrap: wrap; }
     .fg { display: flex; flex-direction: column; gap: 3px; }
-
-    .fg label {
-      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;
-      color: #9ca3af; font-weight: 600;
-    }
-
-    .fg select, .fg input[type="date"] {
+    .fg label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: #9ca3af; font-weight: 600; }
+    .fg select {
       border: 1px solid #e5e7eb; background: #fff; color: #1a1a2e;
       padding: 7px 12px; border-radius: 6px; font-size: 0.84rem; min-width: 140px;
     }
+    .fg select:focus { outline: none; border-color: #4f46e5; }
 
-    .fg select:focus, .fg input:focus { outline: none; border-color: #4f46e5; }
+    #loading { text-align: center; padding: 80px 0; color: #9ca3af; }
 
-    .status-bar {
-      display: flex; gap: 20px; align-items: center;
-      margin-bottom: 14px; font-size: 0.84rem; color: #6b7280;
+    .ag-theme-quartz {
+      --ag-border-radius: 8px;
+      --ag-font-size: 12px;
     }
 
-    .status-bar .ct { color: #4f46e5; font-weight: 600; }
-
-    #loading { text-align: center; padding: 80px 0; color: #9ca3af; font-size: 1rem; }
-
-    .ag-theme-quartz { --ag-border-radius: 8px; }
-
-    .pct-up { color: #16a34a !important; font-weight: 600; }
-    .pct-down { color: #dc2626 !important; font-weight: 600; }
+    .row-value { font-weight: 600; }
+    .row-group-first td, .row-group-first .ag-cell { border-top: 2px solid #e5e7eb !important; }
+    .metric-label { color: #6b7280; font-size: 0.78rem; }
+    .pct-up { color: #16a34a !important; }
+    .pct-down { color: #dc2626 !important; }
     .pct-flat { color: #9ca3af !important; }
   </style>
 </head>
 <body>
 
-  <h1>Marketing Performance — Weekly Summary</h1>
-  <p class="subtitle">Grouped by BU &times; Acquisition Type &times; Week with WoW, YoY, and vs Plan</p>
+  <h1>Marketing Performance — Weekly Pivot</h1>
+  <p class="subtitle">Rows: BU &times; Acq Type &times; Metric &nbsp;|&nbsp; Columns: Weeks (newest first)</p>
 
   <nav>
     <a href="index.html">Raw Data</a>
@@ -91,29 +76,27 @@
       <select id="f-acq"><option value="">All</option></select>
     </div>
     <div class="fg">
-      <label>From</label>
-      <input type="date" id="f-from">
-    </div>
-    <div class="fg">
-      <label>To</label>
-      <input type="date" id="f-to">
+      <label>Weeks to show</label>
+      <select id="f-weeks">
+        <option value="8">8 weeks</option>
+        <option value="12">12 weeks</option>
+        <option value="16" selected>16 weeks</option>
+        <option value="26">26 weeks</option>
+        <option value="52">52 weeks</option>
+      </select>
     </div>
   </div>
 
-  <div class="status-bar" id="status" style="display:none">
-    <span><span class="ct" id="n-rows">0</span> weekly groups</span>
-  </div>
-
-  <div id="loading">Loading & aggregating…</div>
-  <div id="grid" class="ag-theme-quartz" style="height:calc(100vh - 290px);display:none"></div>
+  <div id="loading">Loading & pivoting…</div>
+  <div id="grid" class="ag-theme-quartz" style="height:calc(100vh - 250px);display:none"></div>
 
   <script>
     function weekOf(dateStr) {
       if (!dateStr) return null;
       const d = new Date(dateStr + "T00:00:00");
       const day = d.getDay();
-      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-      return new Date(d.setDate(diff)).toISOString().slice(0, 10);
+      d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
+      return d.toISOString().slice(0, 10);
     }
 
     function addWeeks(w, n) {
@@ -122,149 +105,219 @@
       return d.toISOString().slice(0, 10);
     }
 
-    function pctCell(params, invert) {
-      const v = params.value;
-      if (v == null || isNaN(v)) return "—";
-      const s = (v >= 0 ? "+" : "") + (v * 100).toFixed(1) + "%";
-      const el = params.eGridCell;
-      el.classList.remove("pct-up", "pct-down", "pct-flat");
-      const positive = invert ? v < -0.005 : v > 0.005;
-      const negative = invert ? v > 0.005 : v < -0.005;
-      if (positive) el.classList.add("pct-up");
-      else if (negative) el.classList.add("pct-down");
-      else el.classList.add("pct-flat");
-      return s;
+    function fmtWeekHeader(w) {
+      const d = new Date(w + "T00:00:00");
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     }
 
-    const dollarFmt = p => {
-      const v = p.value;
-      return v != null && !isNaN(v) ? "$" + Math.round(v).toLocaleString() : "—";
-    };
+    let gridApi = null;
+    let allAgg = {};
+    let allLookup = {};
+    let allBus = [];
+    let allAcqs = [];
 
-    const numFmt = p => {
-      const v = p.value;
-      return v != null && !isNaN(v) ? Math.round(v).toLocaleString() : "—";
-    };
+    function buildRows(buFilter, acqFilter, numWeeks) {
+      const today = new Date().toISOString().slice(0, 10);
+      const currentWeek = weekOf(today);
 
-    const cacFmt = p => {
-      const v = p.value;
-      return v != null && !isNaN(v) ? "$" + v.toFixed(2) : "—";
-    };
+      const allWeeks = [...new Set(Object.values(allAgg).map(g => g.week))]
+        .filter(w => w <= currentWeek)
+        .sort((a, b) => b.localeCompare(a))
+        .slice(0, numWeeks);
+
+      const groups = new Map();
+      for (const g of Object.values(allAgg)) {
+        if (buFilter && g.bu !== buFilter) continue;
+        if (acqFilter && g.acq !== acqFilter) continue;
+        const gk = `${g.bu}||${g.acq}`;
+        if (!groups.has(gk)) groups.set(gk, { bu: g.bu, acq: g.acq });
+      }
+
+      const sortedGroups = [...groups.values()].sort((a, b) =>
+        a.bu.localeCompare(b.bu) || a.acq.localeCompare(b.acq)
+      );
+
+      const metrics = ["Spend", "Activations", "CAC"];
+      const rowTypes = ["Value", "vs Plan", "Wo4W", "YoY"];
+
+      const rows = [];
+      for (const grp of sortedGroups) {
+        for (const metric of metrics) {
+          for (const rt of rowTypes) {
+            const row = {
+              bu: grp.bu,
+              acq: grp.acq,
+              metric,
+              rowType: rt,
+              _groupKey: `${grp.bu}||${grp.acq}`,
+              _isGroupFirst: metric === "Spend" && rt === "Value",
+              _isValue: rt === "Value",
+              _metric: metric,
+            };
+
+            for (const week of allWeeks) {
+              const d = allLookup[`${grp.bu}||${grp.acq}||${week}`];
+              if (!d) { row[week] = null; continue; }
+
+              const spend = d.spend;
+              const act = d.act;
+              const cac = act > 0 ? spend / act : null;
+              const planSpend = d.plan_spend;
+              const planAct = d.plan_act;
+              const planCac = planAct > 0 ? planSpend / planAct : null;
+
+              const w4 = allLookup[`${grp.bu}||${grp.acq}||${addWeeks(week, -4)}`];
+              const yy = allLookup[`${grp.bu}||${grp.acq}||${addWeeks(week, -52)}`];
+
+              if (metric === "Spend") {
+                if (rt === "Value") row[week] = spend;
+                else if (rt === "vs Plan") row[week] = planSpend > 0 ? (spend - planSpend) / planSpend : null;
+                else if (rt === "Wo4W") row[week] = w4?.spend > 0 ? (spend - w4.spend) / w4.spend : null;
+                else if (rt === "YoY") row[week] = yy?.spend > 0 ? (spend - yy.spend) / yy.spend : null;
+              } else if (metric === "Activations") {
+                if (rt === "Value") row[week] = act;
+                else if (rt === "vs Plan") row[week] = planAct > 0 ? (act - planAct) / planAct : null;
+                else if (rt === "Wo4W") row[week] = w4?.act > 0 ? (act - w4.act) / w4.act : null;
+                else if (rt === "YoY") row[week] = yy?.act > 0 ? (act - yy.act) / yy.act : null;
+              } else if (metric === "CAC") {
+                const w4Cac = w4?.act > 0 ? w4.spend / w4.act : null;
+                const yyCac = yy?.act > 0 ? yy.spend / yy.act : null;
+                if (rt === "Value") row[week] = cac;
+                else if (rt === "vs Plan") row[week] = planCac > 0 && cac != null ? (cac - planCac) / planCac : null;
+                else if (rt === "Wo4W") row[week] = w4Cac > 0 && cac != null ? (cac - w4Cac) / w4Cac : null;
+                else if (rt === "YoY") row[week] = yyCac > 0 && cac != null ? (cac - yyCac) / yyCac : null;
+              }
+            }
+            rows.push(row);
+          }
+        }
+      }
+
+      return { rows, weeks: allWeeks };
+    }
+
+    function weekColFormatter(params) {
+      const v = params.value;
+      if (v == null || isNaN(v)) return "";
+
+      const rt = params.data.rowType;
+      const metric = params.data._metric;
+
+      if (rt === "Value") {
+        if (metric === "Spend") return "$" + Math.round(v).toLocaleString();
+        if (metric === "Activations") return Math.round(v).toLocaleString();
+        if (metric === "CAC") return v > 0 ? "$" + v.toFixed(2) : "";
+      }
+
+      return (v >= 0 ? "+" : "") + (v * 100).toFixed(1) + "%";
+    }
+
+    function weekColCellClass(params) {
+      const v = params.value;
+      const rt = params.data.rowType;
+      const metric = params.data._metric;
+
+      if (rt === "Value") return params.data._isValue ? "row-value" : "";
+      if (v == null || isNaN(v)) return "pct-flat";
+
+      const invertColor = metric === "Spend" || metric === "CAC";
+      const isPositive = invertColor ? v < -0.005 : v > 0.005;
+      const isNegative = invertColor ? v > 0.005 : v < -0.005;
+      if (isPositive) return "pct-up";
+      if (isNegative) return "pct-down";
+      return "pct-flat";
+    }
+
+    function renderGrid(buFilter, acqFilter, numWeeks) {
+      const { rows, weeks } = buildRows(buFilter, acqFilter, numWeeks);
+
+      const weekCols = weeks.map(w => ({
+        headerName: fmtWeekHeader(w),
+        field: w,
+        width: 95,
+        type: "numericColumn",
+        valueFormatter: weekColFormatter,
+        cellClass: weekColCellClass,
+        suppressMenu: true,
+      }));
+
+      const columnDefs = [
+        { headerName: "BU", field: "bu", pinned: "left", width: 100, rowSpan: params => {
+            if (params.data._isGroupFirst) return 12;
+            return 1;
+          },
+          cellClassRules: { "row-value": p => p.data._isGroupFirst },
+          cellStyle: params => params.data._isGroupFirst ? { fontWeight: 600 } : { color: "transparent" },
+        },
+        { headerName: "Acq Type", field: "acq", pinned: "left", width: 100,
+          rowSpan: params => params.data._isGroupFirst ? 12 : 1,
+          cellStyle: params => params.data._isGroupFirst ? { fontWeight: 600 } : { color: "transparent" },
+        },
+        { headerName: "Metric", field: "metric", pinned: "left", width: 100,
+          cellStyle: params => params.data.rowType === "Value" ? { fontWeight: 600 } : { color: "#6b7280", fontSize: "0.82rem" },
+        },
+        { headerName: "", field: "rowType", pinned: "left", width: 70,
+          cellStyle: params => params.data.rowType === "Value" ? { fontWeight: 600 } : { color: "#9ca3af", fontSize: "0.78rem", fontStyle: "italic" },
+        },
+        ...weekCols,
+      ];
+
+      if (gridApi) gridApi.destroy();
+
+      const gridEl = document.getElementById("grid");
+      gridApi = agGrid.createGrid(gridEl, {
+        rowData: rows,
+        columnDefs,
+        defaultColDef: { sortable: false, resizable: true },
+        suppressRowTransform: true,
+        animateRows: false,
+        headerHeight: 36,
+        rowHeight: 30,
+        getRowStyle: params => {
+          if (params.data._isGroupFirst) return { borderTop: "2px solid #d1d5db" };
+          if (params.data.rowType === "Value" && params.data.metric !== "Spend") return { borderTop: "1px solid #f3f4f6" };
+          return {};
+        },
+      });
+    }
 
     Papa.parse("forecast_performance.csv", {
       download: true, header: true, dynamicTyping: true, skipEmptyLines: true,
       complete(results) {
-        const raw = results.data;
-
-        const agg = {};
-        for (const r of raw) {
+        for (const r of results.data) {
           const week = weekOf(r.date_et);
           if (!week) continue;
           const key = `${r.BU || ""}||${r.acquisition_type || ""}||${week}`;
-          if (!agg[key]) agg[key] = { bu: r.BU || "", acq: r.acquisition_type || "", week, spend: 0, act: 0, plan_spend: 0, plan_act: 0 };
-          agg[key].spend += (r.spend_usd_amt || 0);
-          agg[key].act += (r.first_cashouts_y1_cnt || 0);
-          agg[key].plan_spend += (r.planned_spend_usd_amt || 0);
-          agg[key].plan_act += (r.planned_first_cashouts_y1_cnt || 0);
+          if (!allAgg[key]) allAgg[key] = { bu: r.BU || "", acq: r.acquisition_type || "", week, spend: 0, act: 0, plan_spend: 0, plan_act: 0 };
+          allAgg[key].spend += (r.spend_usd_amt || 0);
+          allAgg[key].act += (r.first_cashouts_y1_cnt || 0);
+          allAgg[key].plan_spend += (r.planned_spend_usd_amt || 0);
+          allAgg[key].plan_act += (r.planned_first_cashouts_y1_cnt || 0);
         }
 
-        const grouped = Object.values(agg);
-        const lk = {};
-        for (const g of grouped) lk[`${g.bu}||${g.acq}||${g.week}`] = g;
+        for (const g of Object.values(allAgg)) allLookup[`${g.bu}||${g.acq}||${g.week}`] = g;
 
-        const rows = grouped.map(g => {
-          const pw = lk[`${g.bu}||${g.acq}||${addWeeks(g.week, -1)}`];
-          const yy = lk[`${g.bu}||${g.acq}||${addWeeks(g.week, -52)}`];
-          return {
-            ...g,
-            cac: g.act > 0 ? g.spend / g.act : null,
-            spend_wow: pw?.spend > 0 ? (g.spend - pw.spend) / pw.spend : null,
-            spend_yoy: yy?.spend > 0 ? (g.spend - yy.spend) / yy.spend : null,
-            spend_vs_plan: g.plan_spend > 0 ? (g.spend - g.plan_spend) / g.plan_spend : null,
-            act_wow: pw?.act > 0 ? (g.act - pw.act) / pw.act : null,
-            act_yoy: yy?.act > 0 ? (g.act - yy.act) / yy.act : null,
-            act_vs_plan: g.plan_act > 0 ? (g.act - g.plan_act) / g.plan_act : null,
-          };
-        });
+        allBus = [...new Set(Object.values(allAgg).map(g => g.bu))].filter(Boolean).sort();
+        allAcqs = [...new Set(Object.values(allAgg).map(g => g.acq))].filter(Boolean).sort();
 
-        // Populate filters
-        const bus = [...new Set(rows.map(r => r.bu))].filter(Boolean).sort();
-        const acqs = [...new Set(rows.map(r => r.acq))].filter(Boolean).sort();
         const fBu = document.getElementById("f-bu");
         const fAcq = document.getElementById("f-acq");
-        bus.forEach(v => fBu.append(new Option(v, v)));
-        acqs.forEach(v => fAcq.append(new Option(v, v)));
-
-        const weeks = rows.map(r => r.week).sort();
-        document.getElementById("f-from").value = weeks[Math.max(0, weeks.length - 52)] || weeks[0];
-        document.getElementById("f-to").value = weeks.at(-1);
+        allBus.forEach(v => fBu.append(new Option(v, v)));
+        allAcqs.forEach(v => fAcq.append(new Option(v, v)));
 
         document.getElementById("loading").style.display = "none";
         document.getElementById("grid").style.display = "block";
         document.getElementById("filters").style.display = "flex";
-        document.getElementById("status").style.display = "flex";
 
-        const gridApi = agGrid.createGrid(document.getElementById("grid"), {
-          rowData: rows,
-          defaultColDef: { sortable: true, resizable: true, minWidth: 80 },
-          columnDefs: [
-            { headerName: "Week", field: "week", pinned: "left", width: 110, sort: "desc" },
-            { headerName: "BU", field: "bu", pinned: "left", width: 100 },
-            { headerName: "Acq Type", field: "acq", pinned: "left", width: 105 },
-            {
-              headerName: "Spend",
-              children: [
-                { headerName: "Amount", field: "spend", valueFormatter: dollarFmt, type: "numericColumn", width: 120 },
-                { headerName: "WoW", field: "spend_wow", valueFormatter: p => pctCell(p, true), type: "numericColumn", width: 85 },
-                { headerName: "YoY", field: "spend_yoy", valueFormatter: p => pctCell(p, true), type: "numericColumn", width: 85 },
-                { headerName: "vs Plan", field: "spend_vs_plan", valueFormatter: p => pctCell(p, true), type: "numericColumn", width: 90 },
-              ]
-            },
-            {
-              headerName: "Activations (Y1)",
-              children: [
-                { headerName: "Count", field: "act", valueFormatter: numFmt, type: "numericColumn", width: 110 },
-                { headerName: "WoW", field: "act_wow", valueFormatter: p => pctCell(p, false), type: "numericColumn", width: 85 },
-                { headerName: "YoY", field: "act_yoy", valueFormatter: p => pctCell(p, false), type: "numericColumn", width: 85 },
-                { headerName: "vs Plan", field: "act_vs_plan", valueFormatter: p => pctCell(p, false), type: "numericColumn", width: 90 },
-              ]
-            },
-            { headerName: "CAC", field: "cac", valueFormatter: cacFmt, type: "numericColumn", width: 90 },
-            { headerName: "Plan Spend", field: "plan_spend", valueFormatter: dollarFmt, type: "numericColumn", width: 115 },
-            { headerName: "Plan Acts", field: "plan_act", valueFormatter: numFmt, type: "numericColumn", width: 105 },
-          ],
-          pagination: true,
-          paginationPageSize: 50,
-          paginationPageSizeSelector: [25, 50, 100, 250],
-          animateRows: false,
-        });
-
-        document.getElementById("n-rows").textContent = rows.length.toLocaleString();
-
-        function applyFilters() {
-          const bu = fBu.value;
-          const acq = fAcq.value;
-          const from = document.getElementById("f-from").value;
-          const to = document.getElementById("f-to").value;
-
-          gridApi.setGridOption("isExternalFilterPresent", () => true);
-          gridApi.setGridOption("doesExternalFilterPass", node => {
-            const d = node.data;
-            if (bu && d.bu !== bu) return false;
-            if (acq && d.acq !== acq) return false;
-            if (from && d.week < from) return false;
-            if (to && d.week > to) return false;
-            return true;
-          });
-          gridApi.onFilterChanged();
+        function refresh() {
+          renderGrid(fBu.value, fAcq.value, +document.getElementById("f-weeks").value);
         }
 
-        fBu.addEventListener("change", applyFilters);
-        fAcq.addEventListener("change", applyFilters);
-        document.getElementById("f-from").addEventListener("change", applyFilters);
-        document.getElementById("f-to").addEventListener("change", applyFilters);
+        fBu.addEventListener("change", refresh);
+        fAcq.addEventListener("change", refresh);
+        document.getElementById("f-weeks").addEventListener("change", refresh);
 
-        applyFilters();
+        refresh();
       }
     });
   </script>
