@@ -105,11 +105,6 @@
       return d.toISOString().slice(0, 10);
     }
 
-    function fmtWeekHeader(w) {
-      const d = new Date(w + "T00:00:00");
-      return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    }
-
     let gridApi = null;
     let allAgg = {};
     let allLookup = {};
@@ -138,9 +133,11 @@
       );
 
       const metrics = ["Spend", "Activations", "CAC"];
-      const rowTypes = ["Value", "vs Plan", "Wo4W", "YoY"];
+      const rowTypes = ["Value", "Plan", "vs Plan", "Wo4W", "YoY"];
+      const ROWS_PER_GROUP = metrics.length * rowTypes.length; // 15
 
       const rows = [];
+      let rowIdx = 0;
       for (const grp of sortedGroups) {
         for (const metric of metrics) {
           for (const rt of rowTypes) {
@@ -152,7 +149,9 @@
               _groupKey: `${grp.bu}||${grp.acq}`,
               _isGroupFirst: metric === "Spend" && rt === "Value",
               _isValue: rt === "Value",
+              _isPlan: rt === "Plan",
               _metric: metric,
+              _rowIdx: rowIdx++,
             };
 
             for (const week of allWeeks) {
@@ -171,11 +170,13 @@
 
               if (metric === "Spend") {
                 if (rt === "Value") row[week] = spend;
+                else if (rt === "Plan") row[week] = planSpend > 0 ? planSpend : null;
                 else if (rt === "vs Plan") row[week] = planSpend > 0 ? (spend - planSpend) / planSpend : null;
                 else if (rt === "Wo4W") row[week] = w4?.spend > 0 ? (spend - w4.spend) / w4.spend : null;
                 else if (rt === "YoY") row[week] = yy?.spend > 0 ? (spend - yy.spend) / yy.spend : null;
               } else if (metric === "Activations") {
                 if (rt === "Value") row[week] = act;
+                else if (rt === "Plan") row[week] = planAct > 0 ? planAct : null;
                 else if (rt === "vs Plan") row[week] = planAct > 0 ? (act - planAct) / planAct : null;
                 else if (rt === "Wo4W") row[week] = w4?.act > 0 ? (act - w4.act) / w4.act : null;
                 else if (rt === "YoY") row[week] = yy?.act > 0 ? (act - yy.act) / yy.act : null;
@@ -183,6 +184,7 @@
                 const w4Cac = w4?.act > 0 ? w4.spend / w4.act : null;
                 const yyCac = yy?.act > 0 ? yy.spend / yy.act : null;
                 if (rt === "Value") row[week] = cac;
+                else if (rt === "Plan") row[week] = planCac > 0 ? planCac : null;
                 else if (rt === "vs Plan") row[week] = planCac > 0 && cac != null ? (cac - planCac) / planCac : null;
                 else if (rt === "Wo4W") row[week] = w4Cac > 0 && cac != null ? (cac - w4Cac) / w4Cac : null;
                 else if (rt === "YoY") row[week] = yyCac > 0 && cac != null ? (cac - yyCac) / yyCac : null;
@@ -203,7 +205,7 @@
       const rt = params.data.rowType;
       const metric = params.data._metric;
 
-      if (rt === "Value") {
+      if (rt === "Value" || rt === "Plan") {
         if (metric === "Spend") return "$" + Math.round(v).toLocaleString();
         if (metric === "Activations") return Math.round(v).toLocaleString();
         if (metric === "CAC") return v > 0 ? "$" + v.toFixed(2) : "";
@@ -217,7 +219,8 @@
       const rt = params.data.rowType;
       const metric = params.data._metric;
 
-      if (rt === "Value") return params.data._isValue ? "row-value" : "";
+      if (rt === "Value") return "row-value";
+      if (rt === "Plan") return "";
       if (v == null || isNaN(v)) return "pct-flat";
 
       const invertColor = metric === "Spend" || metric === "CAC";
@@ -232,9 +235,9 @@
       const { rows, weeks } = buildRows(buFilter, acqFilter, numWeeks);
 
       const weekCols = weeks.map(w => ({
-        headerName: fmtWeekHeader(w),
+        headerName: w,
         field: w,
-        width: 95,
+        width: 108,
         type: "numericColumn",
         valueFormatter: weekColFormatter,
         cellClass: weekColCellClass,
@@ -243,21 +246,25 @@
 
       const columnDefs = [
         { headerName: "BU", field: "bu", pinned: "left", width: 100, rowSpan: params => {
-            if (params.data._isGroupFirst) return 12;
+            if (params.data._isGroupFirst) return ROWS_PER_GROUP;
             return 1;
           },
           cellClassRules: { "row-value": p => p.data._isGroupFirst },
           cellStyle: params => params.data._isGroupFirst ? { fontWeight: 600 } : { color: "transparent" },
         },
         { headerName: "Acq Type", field: "acq", pinned: "left", width: 100,
-          rowSpan: params => params.data._isGroupFirst ? 12 : 1,
+          rowSpan: params => params.data._isGroupFirst ? ROWS_PER_GROUP : 1,
           cellStyle: params => params.data._isGroupFirst ? { fontWeight: 600 } : { color: "transparent" },
         },
         { headerName: "Metric", field: "metric", pinned: "left", width: 100,
           cellStyle: params => params.data.rowType === "Value" ? { fontWeight: 600 } : { color: "#6b7280", fontSize: "0.82rem" },
         },
         { headerName: "", field: "rowType", pinned: "left", width: 70,
-          cellStyle: params => params.data.rowType === "Value" ? { fontWeight: 600 } : { color: "#9ca3af", fontSize: "0.78rem", fontStyle: "italic" },
+          cellStyle: params => {
+            if (params.data.rowType === "Value") return { fontWeight: 600 };
+            if (params.data.rowType === "Plan") return { color: "#6b7280", fontSize: "0.82rem" };
+            return { color: "#9ca3af", fontSize: "0.78rem", fontStyle: "italic" };
+          },
         },
         ...weekCols,
       ];
@@ -274,9 +281,14 @@
         headerHeight: 36,
         rowHeight: 30,
         getRowStyle: params => {
-          if (params.data._isGroupFirst) return { borderTop: "2px solid #d1d5db" };
-          if (params.data.rowType === "Value" && params.data.metric !== "Spend") return { borderTop: "1px solid #f3f4f6" };
-          return {};
+          const shades = ["#ffffff", "#fafbfc", "#f5f6f8", "#f0f1f4", "#ebedf1"];
+          const d = params.data;
+          const rowTypes = ["Value", "Plan", "vs Plan", "Wo4W", "YoY"];
+          const shade = shades[rowTypes.indexOf(d.rowType)] || "#fff";
+          const style = { background: shade };
+          if (d._isGroupFirst) style.borderTop = "2px solid #d1d5db";
+          else if (d.rowType === "Value" && d.metric !== "Spend") style.borderTop = "1px solid #e5e7eb";
+          return style;
         },
       });
     }
