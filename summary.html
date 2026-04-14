@@ -105,6 +105,10 @@
       return d.toISOString().slice(0, 10);
     }
 
+    const METRICS = ["Spend", "Activations", "CAC"];
+    const ROW_TYPES = ["Value", "Plan", "vs Plan", "Wo4W", "YoY"];
+    const ROWS_PER_GROUP = METRICS.length * ROW_TYPES.length;
+
     let gridApi = null;
     let allAgg = {};
     let allLookup = {};
@@ -132,15 +136,11 @@
         a.bu.localeCompare(b.bu) || a.acq.localeCompare(b.acq)
       );
 
-      const metrics = ["Spend", "Activations", "CAC"];
-      const rowTypes = ["Value", "Plan", "vs Plan", "Wo4W", "YoY"];
-      const ROWS_PER_GROUP = metrics.length * rowTypes.length; // 15
-
       const rows = [];
       let rowIdx = 0;
       for (const grp of sortedGroups) {
-        for (const metric of metrics) {
-          for (const rt of rowTypes) {
+        for (const metric of METRICS) {
+          for (const rt of ROW_TYPES) {
             const row = {
               bu: grp.bu,
               acq: grp.acq,
@@ -283,8 +283,7 @@
         getRowStyle: params => {
           const shades = ["#ffffff", "#fafbfc", "#f5f6f8", "#f0f1f4", "#ebedf1"];
           const d = params.data;
-          const rowTypes = ["Value", "Plan", "vs Plan", "Wo4W", "YoY"];
-          const shade = shades[rowTypes.indexOf(d.rowType)] || "#fff";
+          const shade = shades[ROW_TYPES.indexOf(d.rowType)] || "#fff";
           const style = { background: shade };
           if (d._isGroupFirst) style.borderTop = "2px solid #d1d5db";
           else if (d.rowType === "Value" && d.metric !== "Spend") style.borderTop = "1px solid #e5e7eb";
