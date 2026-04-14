@@ -3,10 +3,10 @@ title: Clean Data Dashboard
 toc: false
 ---
 
-# Clean Data Dashboard
-
-<p style="color: var(--muted); margin-top: -12px; margin-bottom: 20px; font-size: 0.9rem;">
-Operational visibility into DataMart health, Genie adoption, and compute costs. Source: <code>main_prod.ae_monitoring</code>.
+<h1 style="margin-bottom: 4px;">Clean Data Dashboard</h1>
+<p style="color: var(--muted); margin-bottom: 24px; font-size: 0.9rem;">
+Operational visibility into DataMart health, Genie adoption, and compute costs.<br>
+Source: <code>main_prod.ae_monitoring</code>
 </p>
 
 ```js
@@ -46,13 +46,10 @@ const genieQueries = d3.sum(fg, d => d.query_count);
 const dmCost = d3.sum(fc.filter(d => d.category === "DM"), d => d.cost_dollars);
 const governedTables = tablesMeta.length;
 const latestGenieDate = d3.max(fg, d => d.date);
-const genieUsers = d3.sum(
-  fg.filter(d => d.date === latestGenieDate),
-  d => d.active_users
-);
+const genieUsers = d3.sum(fg.filter(d => d.date === latestGenieDate), d => d.active_users);
 ```
 
-<div class="grid grid-cols-3" style="gap: 14px;">
+<div class="grid grid-cols-6">
   ${kpiCard({title: "Avg Success Rate", value: avgSuccessRate + "%", color: "green"})}
   ${kpiCard({title: "DM Jobs Tracked", value: String(jobCount), color: "accent"})}
   ${kpiCard({title: "Genie Queries", value: genieQueries.toLocaleString(), color: "accent"})}
@@ -65,44 +62,47 @@ const genieUsers = d3.sum(
 
 ## Job Reliability
 
-<p style="color: var(--muted); font-size: 0.85rem;">Success rate per job over the selected period. Jobs with failures are highlighted.</p>
+<p style="color: var(--muted); font-size: 0.85rem; margin-top: -8px;">Success rate per job. Jobs with failures are highlighted.</p>
 
 ```js
 const jobReliability = d3.rollups(
   fp,
   v => ({rate: v.filter(d => d.status === "SUCCESS").length / v.length * 100, runs: v.length, failures: v.filter(d => d.status === "FAILED").length}),
   d => d.job_name
-).map(([name, stats]) => ({job_name: name, success_rate: stats.rate, total_runs: stats.runs, failures: stats.failures}))
+).map(([name, s]) => ({job_name: name, success_rate: s.rate, total_runs: s.runs, failures: s.failures}))
  .sort((a, b) => a.success_rate - b.success_rate);
 ```
 
 ```js
 Plot.plot({
   marginLeft: 180,
+  marginRight: 60,
   width,
-  height: Math.max(300, jobReliability.length * 28),
-  x: {domain: [0, 100], label: "Success rate (%)", grid: true},
-  y: {label: null},
+  height: Math.max(300, jobReliability.length * 26),
+  x: {domain: [0, 100], label: "Success rate (%)", grid: true, ticks: 5},
+  y: {label: null, padding: 0.2},
   marks: [
     Plot.barX(jobReliability, {
       x: "success_rate",
       y: "job_name",
       fill: d => d.success_rate >= 99.9 ? "#34d399" : d.success_rate >= 95 ? "#f5a524" : "#f87171",
       sort: {y: "x"},
-      tip: true,
+      tip: {format: {y: true, x: (d) => d.toFixed(1) + "%"}},
+      rx: 3,
     }),
     Plot.text(jobReliability, {
       x: "success_rate",
       y: "job_name",
       text: d => d.success_rate.toFixed(1) + "%",
-      dx: 4,
+      dx: 6,
       textAnchor: "start",
       fill: "#e8ecf4",
       fontSize: 11,
+      fontWeight: 600,
     }),
     Plot.ruleX([0]),
   ],
-  style: {background: "transparent", color: "#8b93a8"},
+  style: {background: "transparent", color: "#8b93a8", fontSize: "12px"},
 })
 ```
 
@@ -110,24 +110,25 @@ Plot.plot({
 
 ## Genie Room Usage
 
-<p style="color: var(--muted); font-size: 0.85rem;">Total queries per room and peak active users.</p>
+<p style="color: var(--muted); font-size: 0.85rem; margin-top: -8px;">Total queries per room and peak active users.</p>
 
 ```js
 const genieByRoom = d3.rollups(
   fg,
   v => ({queries: d3.sum(v, d => d.query_count), users: d3.max(v, d => d.active_users)}),
   d => d.room_name
-).map(([room, stats]) => ({room_name: room, ...stats}))
+).map(([room, s]) => ({room_name: room, ...s}))
  .sort((a, b) => b.queries - a.queries);
 ```
 
 ```js
 Plot.plot({
   marginLeft: 180,
+  marginRight: 80,
   width,
-  height: Math.max(200, genieByRoom.length * 36),
+  height: Math.max(200, genieByRoom.length * 34),
   x: {label: "Total queries", grid: true},
-  y: {label: null},
+  y: {label: null, padding: 0.2},
   marks: [
     Plot.barX(genieByRoom, {
       x: "queries",
@@ -135,19 +136,21 @@ Plot.plot({
       fill: "#7c8cff",
       sort: {y: "-x"},
       tip: true,
+      rx: 3,
     }),
     Plot.text(genieByRoom, {
       x: "queries",
       y: "room_name",
-      text: d => `${d.queries.toLocaleString()} (${d.users} users)`,
-      dx: 4,
+      text: d => `${d.queries.toLocaleString()}  (${d.users} users)`,
+      dx: 6,
       textAnchor: "start",
       fill: "#e8ecf4",
       fontSize: 11,
+      fontWeight: 600,
     }),
     Plot.ruleX([0]),
   ],
-  style: {background: "transparent", color: "#8b93a8"},
+  style: {background: "transparent", color: "#8b93a8", fontSize: "12px"},
 })
 ```
 
@@ -170,45 +173,47 @@ const costByCategory = d3.rollups(
 const totalCost = d3.sum(costByCategory, d => d.total);
 ```
 
-<div class="grid grid-cols-2" style="gap: 24px;">
+<div class="grid grid-cols-2">
 <div class="card" style="padding: 20px;">
 
-### Cost by Category &mdash; Total: $${Math.round(totalCost).toLocaleString()}
+<h3 style="margin-top: 0;">By Category &mdash; Total: $${Math.round(totalCost).toLocaleString()}</h3>
 
 ```js
 Plot.plot({
   marginLeft: 80,
-  width: 420,
-  height: 200,
+  marginRight: 100,
+  height: 180,
   x: {label: "Cost ($)", grid: true},
-  y: {label: null},
+  y: {label: null, padding: 0.3},
   marks: [
     Plot.barX(costByCategory, {
       x: "total",
       y: "category",
-      fill: d => categoryColors[d.category] || "#8b93a8",
+      fill: d => categoryColors[d.category],
       sort: {y: "-x"},
       tip: true,
+      rx: 3,
     }),
     Plot.text(costByCategory, {
       x: "total",
       y: "category",
       text: d => `$${Math.round(d.total).toLocaleString()} (${(d.total / totalCost * 100).toFixed(0)}%)`,
-      dx: 4,
+      dx: 6,
       textAnchor: "start",
       fill: "#e8ecf4",
       fontSize: 11,
+      fontWeight: 600,
     }),
     Plot.ruleX([0]),
   ],
-  style: {background: "transparent", color: "#8b93a8"},
+  style: {background: "transparent", color: "#8b93a8", fontSize: "12px"},
 })
 ```
 
 </div>
 <div class="card" style="padding: 20px;">
 
-### Top 10 Jobs by Cost
+<h3 style="margin-top: 0;">Top 10 Jobs by Cost</h3>
 
 ```js
 const costCategoryFilter = view(Inputs.select(
@@ -229,11 +234,11 @@ const topJobs = d3.rollups(
 
 ```js
 Plot.plot({
-  marginLeft: 260,
-  width: 480,
-  height: Math.max(200, topJobs.length * 30),
+  marginLeft: 250,
+  marginRight: 70,
+  height: Math.max(180, topJobs.length * 28),
   x: {label: "Cost ($)", grid: true},
-  y: {label: null},
+  y: {label: null, padding: 0.2},
   marks: [
     Plot.barX(topJobs, {
       x: "total",
@@ -241,19 +246,21 @@ Plot.plot({
       fill: categoryColors[costCategoryFilter] || "#f5a524",
       sort: {y: "-x"},
       tip: true,
+      rx: 3,
     }),
     Plot.text(topJobs, {
       x: "total",
       y: "job_name",
       text: d => "$" + Math.round(d.total).toLocaleString(),
-      dx: 4,
+      dx: 6,
       textAnchor: "start",
       fill: "#e8ecf4",
       fontSize: 11,
+      fontWeight: 600,
     }),
     Plot.ruleX([0]),
   ],
-  style: {background: "transparent", color: "#8b93a8"},
+  style: {background: "transparent", color: "#8b93a8", fontSize: "12px"},
 })
 ```
 
@@ -264,7 +271,7 @@ Plot.plot({
 
 ## Daily Cost Trend
 
-<p style="color: var(--muted); font-size: 0.85rem;">Stacked area showing daily compute spend by category.</p>
+<p style="color: var(--muted); font-size: 0.85rem; margin-top: -8px;">Stacked area: daily compute spend by category.</p>
 
 ```js
 const dailyCost = d3.rollups(
@@ -293,10 +300,11 @@ Plot.plot({
       fill: "category",
       curve: "step",
       tip: true,
+      fillOpacity: 0.8,
     })),
     Plot.ruleY([0]),
   ],
-  style: {background: "transparent", color: "#8b93a8"},
+  style: {background: "transparent", color: "#8b93a8", fontSize: "12px"},
 })
 ```
 
@@ -304,16 +312,14 @@ Plot.plot({
 
 ## Documentation Coverage
 
-<p style="color: var(--muted); font-size: 0.85rem;">Column documentation and primary key coverage by schema.</p>
+<p style="color: var(--muted); font-size: 0.85rem; margin-top: -8px;">Column documentation rate by schema.</p>
 
 ```js
 const schemaCoverage = d3.rollups(
   tablesMeta,
   v => ({
     tables: v.length,
-    withDesc: v.filter(d => d.has_description === true || d.has_description === "true").length,
-    withPk: v.filter(d => d.has_primary_key === true || d.has_primary_key === "true").length,
-    docRate: d3.sum(v, d => d.documented_columns) / d3.sum(v, d => d.total_columns) * 100,
+    docRate: d3.sum(v, d => +d.documented_columns) / d3.sum(v, d => +d.total_columns) * 100,
   }),
   d => d.schema_name
 ).map(([schema, s]) => ({schema_name: schema, ...s}))
@@ -322,11 +328,12 @@ const schemaCoverage = d3.rollups(
 
 ```js
 Plot.plot({
-  marginLeft: 170,
+  marginLeft: 180,
+  marginRight: 80,
   width,
-  height: Math.max(250, schemaCoverage.length * 28),
+  height: Math.max(250, schemaCoverage.length * 26),
   x: {domain: [0, 100], label: "Column documentation rate (%)", grid: true},
-  y: {label: null},
+  y: {label: null, padding: 0.2},
   marks: [
     Plot.barX(schemaCoverage, {
       x: "docRate",
@@ -334,19 +341,21 @@ Plot.plot({
       fill: d => d.docRate >= 80 ? "#34d399" : d.docRate >= 50 ? "#f5a524" : "#f87171",
       sort: {y: "x"},
       tip: true,
+      rx: 3,
     }),
     Plot.text(schemaCoverage, {
       x: "docRate",
       y: "schema_name",
-      text: d => `${d.docRate.toFixed(0)}% (${d.tables} tables)`,
-      dx: 4,
+      text: d => `${d.docRate.toFixed(0)}%  (${d.tables} tables)`,
+      dx: 6,
       textAnchor: "start",
       fill: "#e8ecf4",
       fontSize: 11,
+      fontWeight: 600,
     }),
     Plot.ruleX([0]),
   ],
-  style: {background: "transparent", color: "#8b93a8"},
+  style: {background: "transparent", color: "#8b93a8", fontSize: "12px"},
 })
 ```
 
@@ -354,7 +363,7 @@ Plot.plot({
 
 ## Pipeline Detail
 
-<p style="color: var(--muted); font-size: 0.85rem;">Search and filter individual job runs.</p>
+<p style="color: var(--muted); font-size: 0.85rem; margin-top: -8px;">Search and browse individual job runs.</p>
 
 ```js
 const jobSearch = view(Inputs.search(fp, {placeholder: "Search jobs\u2026"}));
@@ -375,4 +384,4 @@ Inputs.table(jobSearch, {
 })
 ```
 
-<p style="color: var(--muted); font-size: 0.78rem; margin-top: 16px;">Source tables: <code>ae_monitoring.daily_pipeline_metrics</code>, <code>ae_monitoring.genie_metrics_daily</code>, <code>ae_monitoring.databricks_cost_daily</code>, <code>ae_monitoring.table_metadata_metrics</code>.</p>
+<p style="color: var(--muted); font-size: 0.78rem; margin-top: 20px;">Source: <code>ae_monitoring.daily_pipeline_metrics</code>, <code>ae_monitoring.genie_metrics_daily</code>, <code>ae_monitoring.databricks_cost_daily</code>, <code>ae_monitoring.table_metadata_metrics</code>.</p>

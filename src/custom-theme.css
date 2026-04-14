@@ -1,4 +1,12 @@
-:root {
+:root,
+:root[data-theme="dark"] {
+  --theme-foreground: #e8ecf4;
+  --theme-background: #0c0e14;
+  --theme-foreground-muted: #8b93a8;
+  --theme-foreground-faint: #2a3148;
+  --theme-foreground-fainter: #1c2130;
+  --theme-background-alt: #141824;
+
   --bg: #0c0e14;
   --surface: #141824;
   --surface2: #1c2130;
@@ -13,34 +21,98 @@
   --no: #f87171;
   --link: #38bdf8;
   --radius: 10px;
-  --theme-foreground: #e8ecf4;
-  --theme-background: #0c0e14;
-  --theme-foreground-muted: #8b93a8;
-  --theme-foreground-faint: #2a3148;
 }
 
+html,
 body {
   background: var(--bg) !important;
-  color: var(--text);
+  color: var(--text) !important;
 }
 
-#observablehq-main {
-  background: var(--bg);
+#observablehq-main,
+#observablehq-center,
+#observablehq-header,
+#observablehq-sidebar {
+  background: var(--bg) !important;
 }
 
+#observablehq-sidebar {
+  border-right: 1px solid var(--border) !important;
+}
+
+#observablehq-sidebar nav a {
+  color: var(--muted) !important;
+}
+
+#observablehq-sidebar nav a:hover,
+#observablehq-sidebar nav a[aria-current] {
+  color: var(--text) !important;
+}
+
+#observablehq-header a {
+  color: var(--text) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text) !important;
+}
+
+h2 {
+  color: var(--accent) !important;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em;
+  margin-top: 32px !important;
+}
+
+h3 {
+  color: var(--text) !important;
+  font-size: 0.95rem !important;
+}
+
+p {
+  color: var(--muted);
+}
+
+a {
+  color: var(--link) !important;
+}
+
+code {
+  color: var(--accent) !important;
+  background: var(--surface2) !important;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+hr {
+  border: none !important;
+  border-top: 1px solid var(--border) !important;
+  margin: 28px 0 !important;
+}
+
+/* ── Framework card overrides ── */
 .card {
   background: var(--surface) !important;
   border: 1px solid var(--border) !important;
   border-radius: var(--radius) !important;
+  box-shadow: none !important;
 }
 
-/* KPI cards */
+/* ── Grid fixes ── */
+.grid {
+  gap: 14px;
+}
+
+/* ── KPI cards ── */
 .kpi-card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px 16px;
+  background: var(--surface2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  padding: 22px 16px !important;
   text-align: center;
+  min-height: 90px;
 }
 
 .kpi-value {
@@ -50,14 +122,14 @@ body {
   line-height: 1.2;
 }
 
-.kpi-value.green { color: var(--yes); }
-.kpi-value.accent { color: var(--accent); }
-.kpi-value.warn { color: var(--warn); }
-.kpi-value.red { color: var(--no); }
+.kpi-value.green { color: var(--yes) !important; }
+.kpi-value.accent { color: var(--accent) !important; }
+.kpi-value.warn { color: var(--warn) !important; }
+.kpi-value.red { color: var(--no) !important; }
 
 .kpi-label {
   font-size: 0.72rem;
-  color: var(--muted);
+  color: var(--muted) !important;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-top: 6px;
@@ -70,11 +142,11 @@ body {
   font-weight: 600;
 }
 
-.kpi-delta.up { color: var(--yes); }
-.kpi-delta.down { color: var(--no); }
-.kpi-delta.flat { color: var(--muted); }
+.kpi-delta.up { color: var(--yes) !important; }
+.kpi-delta.down { color: var(--no) !important; }
+.kpi-delta.flat { color: var(--muted) !important; }
 
-/* Pills / badges */
+/* ── Pills / badges ── */
 .pill {
   display: inline-block;
   padding: 2px 8px;
@@ -83,48 +155,41 @@ body {
   font-size: 0.75rem;
 }
 
-.pill.stable { background: rgba(52, 211, 153, 0.15); color: var(--yes); }
+.pill.stable, .pill.yes { background: rgba(52, 211, 153, 0.15); color: var(--yes); }
 .pill.review { background: rgba(245, 165, 36, 0.12); color: var(--warn); }
 .pill.progress { background: rgba(124, 140, 255, 0.15); color: var(--accent); }
-.pill.yes { background: rgba(52, 211, 153, 0.15); color: var(--yes); }
 .pill.no { background: rgba(248, 113, 113, 0.15); color: var(--no); }
 
-/* Callouts */
+/* ── Callouts ── */
 .callout {
-  background: var(--warn-bg);
-  border: 1px solid rgba(245, 165, 36, 0.35);
-  border-radius: var(--radius);
-  padding: 14px 16px;
+  background: var(--warn-bg) !important;
+  border: 1px solid rgba(245, 165, 36, 0.35) !important;
+  border-radius: var(--radius) !important;
+  padding: 14px 16px !important;
   margin: 16px 0;
   font-size: 0.9rem;
-  color: #f0d9a8;
+  color: #f0d9a8 !important;
 }
 
-.callout strong { color: var(--warn); }
+.callout strong { color: var(--warn) !important; }
 
-/* Filter controls */
-.filter-bar {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-
-.filter-bar label {
-  font-size: 0.78rem;
-  color: var(--muted);
+/* ── Observable Inputs overrides ── */
+form label {
+  color: var(--muted) !important;
+  font-size: 0.78rem !important;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  font-weight: 600;
+  font-weight: 600 !important;
 }
 
 input[type="search"],
 input[type="text"],
-select {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  color: var(--text);
+select,
+form input,
+form select {
+  background: var(--surface2) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 0.85rem;
@@ -132,36 +197,63 @@ select {
 
 input:focus,
 select:focus {
-  outline: none;
-  border-color: var(--accent);
+  outline: none !important;
+  border-color: var(--accent) !important;
 }
 
-/* Tables */
+/* ── Observable Table overrides ── */
 table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.85rem;
 }
 
-th, td {
-  padding: 10px 12px;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-}
-
-th {
-  color: var(--muted);
+table thead th {
+  background: var(--surface) !important;
+  color: var(--muted) !important;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-size: 0.72rem;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border) !important;
 }
 
-tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
+table tbody td {
+  padding: 10px 12px;
+  color: var(--text) !important;
+  border-bottom: 1px solid var(--border) !important;
 }
 
-/* Chart color palette override for Observable Plot */
-.plot {
-  --plot-background: transparent;
+table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* ── Observable Plot ── */
+.plot,
+svg[class^="plot"] {
+  --plot-background: transparent !important;
+}
+
+figure {
+  margin: 0 !important;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
 }

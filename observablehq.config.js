@@ -1,7 +1,7 @@
 export default {
   title: "Marketing Analytics",
   root: "src",
-  theme: "dashboard",
+  theme: ["dashboard", "dark"],
   style: "custom-theme.css",
   pages: [
     {
