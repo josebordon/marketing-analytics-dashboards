@@ -1,0 +1,167 @@
+:root {
+  --bg: #0c0e14;
+  --surface: #141824;
+  --surface2: #1c2130;
+  --border: #2a3148;
+  --text: #e8ecf4;
+  --muted: #8b93a8;
+  --accent: #7c8cff;
+  --accent-dim: rgba(124, 140, 255, 0.15);
+  --warn: #f5a524;
+  --warn-bg: rgba(245, 165, 36, 0.12);
+  --yes: #34d399;
+  --no: #f87171;
+  --link: #38bdf8;
+  --radius: 10px;
+  --theme-foreground: #e8ecf4;
+  --theme-background: #0c0e14;
+  --theme-foreground-muted: #8b93a8;
+  --theme-foreground-faint: #2a3148;
+}
+
+body {
+  background: var(--bg) !important;
+  color: var(--text);
+}
+
+#observablehq-main {
+  background: var(--bg);
+}
+
+.card {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+}
+
+/* KPI cards */
+.kpi-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 16px;
+  text-align: center;
+}
+
+.kpi-value {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.kpi-value.green { color: var(--yes); }
+.kpi-value.accent { color: var(--accent); }
+.kpi-value.warn { color: var(--warn); }
+.kpi-value.red { color: var(--no); }
+
+.kpi-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.kpi-delta {
+  font-size: 0.78rem;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.kpi-delta.up { color: var(--yes); }
+.kpi-delta.down { color: var(--no); }
+.kpi-delta.flat { color: var(--muted); }
+
+/* Pills / badges */
+.pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.pill.stable { background: rgba(52, 211, 153, 0.15); color: var(--yes); }
+.pill.review { background: rgba(245, 165, 36, 0.12); color: var(--warn); }
+.pill.progress { background: rgba(124, 140, 255, 0.15); color: var(--accent); }
+.pill.yes { background: rgba(52, 211, 153, 0.15); color: var(--yes); }
+.pill.no { background: rgba(248, 113, 113, 0.15); color: var(--no); }
+
+/* Callouts */
+.callout {
+  background: var(--warn-bg);
+  border: 1px solid rgba(245, 165, 36, 0.35);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin: 16px 0;
+  font-size: 0.9rem;
+  color: #f0d9a8;
+}
+
+.callout strong { color: var(--warn); }
+
+/* Filter controls */
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.filter-bar label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+input[type="search"],
+input[type="text"],
+select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+th, td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+}
+
+tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Chart color palette override for Observable Plot */
+.plot {
+  --plot-background: transparent;
+}
