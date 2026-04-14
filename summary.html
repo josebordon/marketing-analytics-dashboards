@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marketing Performance — Weekly Summary</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.3.1/dist/css/tabulator_midnight.min.css">
+  <script src="https://unpkg.com/tabulator-tables@6.3.1/dist/js/tabulator.min.js"></script>
+  <script src="https://unpkg.com/papaparse@5.5.2/papaparse.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #0c0e14;
+      --surface: #141824;
+      --border: #2a3148;
+      --text: #e8ecf4;
+      --muted: #8b93a8;
+      --accent: #7c8cff;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #f5a524;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 32px 48px;
+      min-height: 100vh;
+    }
+
+    h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+
+    .subtitle code {
+      color: var(--accent);
+      background: #1c2130;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+
+    nav {
+      margin-bottom: 24px;
+      display: flex;
+      gap: 8px;
+    }
+
+    nav a {
+      display: inline-block;
+      padding: 8px 18px;
+      background: var(--surface);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    nav a:hover { color: var(--text); border-color: var(--accent); }
+    nav a.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+    .filters {
+      display: flex;
+      gap: 16px;
+      align-items: flex-end;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .filter-group label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .filter-group select, .filter-group input {
+      background: #1c2130;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      min-width: 140px;
+    }
+
+    .filter-group select:focus, .filter-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .status-bar {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .status-bar .count { color: var(--accent); font-weight: 600; }
+
+    #loading {
+      text-align: center;
+      padding: 80px 0;
+      color: var(--muted);
+      font-size: 1.1rem;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .tabulator {
+      background: var(--surface) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 10px !important;
+      overflow: hidden;
+      font-size: 0.82rem !important;
+    }
+
+    .tabulator .tabulator-header {
+      background: #1a1f2e !important;
+      border-bottom: 1px solid var(--border) !important;
+    }
+
+    .tabulator .tabulator-header .tabulator-col {
+      background: transparent !important;
+      border-right: 1px solid var(--border) !important;
+    }
+
+    .tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-title {
+      color: var(--muted) !important;
+      font-weight: 600 !important;
+      font-size: 0.72rem !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.04em !important;
+    }
+
+    .tabulator .tabulator-header .tabulator-col-group .tabulator-col-group-cols {
+      border-top: 1px solid var(--border) !important;
+    }
+
+    .tabulator .tabulator-tableholder .tabulator-table .tabulator-row {
+      background: transparent !important;
+      border-bottom: 1px solid #1c2130 !important;
+    }
+
+    .tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover {
+      background: rgba(124, 140, 255, 0.05) !important;
+    }
+
+    .tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell {
+      color: var(--text) !important;
+      border-right: 1px solid #1c2130 !important;
+      padding: 8px 12px !important;
+    }
+
+    .tabulator .tabulator-footer {
+      background: #1a1f2e !important;
+      border-top: 1px solid var(--border) !important;
+      color: var(--muted) !important;
+    }
+
+    .tabulator .tabulator-footer .tabulator-page {
+      background: var(--bg) !important;
+      border: 1px solid var(--border) !important;
+      color: var(--text) !important;
+      border-radius: 4px !important;
+      margin: 0 2px !important;
+    }
+
+    .tabulator .tabulator-footer .tabulator-page.active {
+      background: var(--accent) !important;
+      color: var(--bg) !important;
+      border-color: var(--accent) !important;
+    }
+
+    .tabulator .tabulator-footer .tabulator-page-size {
+      background: var(--bg) !important;
+      border: 1px solid var(--border) !important;
+      color: var(--text) !important;
+      border-radius: 4px !important;
+    }
+
+    .pct-positive { color: #34d399 !important; font-weight: 600; }
+    .pct-negative { color: #f87171 !important; font-weight: 600; }
+    .pct-neutral { color: #8b93a8 !important; }
+  </style>
+</head>
+<body>
+
+  <h1>Marketing Performance — Weekly Summary</h1>
+  <div class="subtitle">
+    Grouped by BU &times; Acquisition Type &times; Week &mdash; with WoW, YoY, and vs Plan
+  </div>
+
+  <nav>
+    <a href="index.html">Raw Data</a>
+    <a href="summary.html" class="active">Weekly Summary</a>
+  </nav>
+
+  <div class="filters" id="filters" style="display:none">
+    <div class="filter-group">
+      <label>BU</label>
+      <select id="f-bu"><option value="All">All</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Acquisition Type</label>
+      <select id="f-acq"><option value="All">All</option></select>
+    </div>
+    <div class="filter-group">
+      <label>From</label>
+      <input type="date" id="f-from">
+    </div>
+    <div class="filter-group">
+      <label>To</label>
+      <input type="date" id="f-to">
+    </div>
+  </div>
+
+  <div class="status-bar" id="status-bar" style="display:none">
+    <span><span class="count" id="row-count">0</span> weekly groups</span>
+  </div>
+
+  <div id="loading"><span class="spinner"></span>Loading &amp; aggregating data&hellip;</div>
+  <div id="table"></div>
+
+  <script>
+    const CSV_URL = "forecast_performance.csv";
+
+    function weekOf(dateStr) {
+      if (!dateStr) return null;
+      const d = new Date(dateStr + "T00:00:00");
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(d.setDate(diff));
+      return monday.toISOString().slice(0, 10);
+    }
+
+    function addWeeks(weekStr, n) {
+      const d = new Date(weekStr + "T00:00:00");
+      d.setDate(d.getDate() + n * 7);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function fmtDollar(v) {
+      if (v == null || isNaN(v)) return "—";
+      return "$" + Math.round(v).toLocaleString();
+    }
+
+    function fmtNum(v) {
+      if (v == null || isNaN(v)) return "—";
+      return Math.round(v).toLocaleString();
+    }
+
+    function fmtPct(cell) {
+      const v = cell.getValue();
+      if (v == null || isNaN(v)) return "—";
+      const s = (v >= 0 ? "+" : "") + (v * 100).toFixed(1) + "%";
+      const el = cell.getElement();
+      el.classList.remove("pct-positive", "pct-negative", "pct-neutral");
+      if (v > 0.005) el.classList.add("pct-positive");
+      else if (v < -0.005) el.classList.add("pct-negative");
+      else el.classList.add("pct-neutral");
+      return s;
+    }
+
+    function fmtPctInverse(cell) {
+      const v = cell.getValue();
+      if (v == null || isNaN(v)) return "—";
+      const s = (v >= 0 ? "+" : "") + (v * 100).toFixed(1) + "%";
+      const el = cell.getElement();
+      el.classList.remove("pct-positive", "pct-negative", "pct-neutral");
+      if (v < -0.005) el.classList.add("pct-positive");
+      else if (v > 0.005) el.classList.add("pct-negative");
+      else el.classList.add("pct-neutral");
+      return s;
+    }
+
+    Papa.parse(CSV_URL, {
+      download: true,
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        const raw = results.data;
+
+        // Aggregate: group by BU × acq_type × week
+        const agg = {};
+        for (const r of raw) {
+          const week = weekOf(r.date_et);
+          if (!week) continue;
+          const key = `${r.BU || ""}||${r.acquisition_type || ""}||${week}`;
+          if (!agg[key]) {
+            agg[key] = {
+              bu: r.BU || "",
+              acq: r.acquisition_type || "",
+              week,
+              spend: 0, activations: 0,
+              plan_spend: 0, plan_activations: 0,
+            };
+          }
+          agg[key].spend += (r.spend_usd_amt || 0);
+          agg[key].activations += (r.first_cashouts_y1_cnt || 0);
+          agg[key].plan_spend += (r.planned_spend_usd_amt || 0);
+          agg[key].plan_activations += (r.planned_first_cashouts_y1_cnt || 0);
+        }
+
+        const grouped = Object.values(agg);
+
+        // Build a lookup for WoW and YoY
+        const lookup = {};
+        for (const g of grouped) {
+          lookup[`${g.bu}||${g.acq}||${g.week}`] = g;
+        }
+
+        // Compute WoW, YoY, vs Plan
+        const rows = grouped.map(g => {
+          const prevWeek = addWeeks(g.week, -1);
+          const yoyWeek = addWeeks(g.week, -52);
+          const prev = lookup[`${g.bu}||${g.acq}||${prevWeek}`];
+          const yoy = lookup[`${g.bu}||${g.acq}||${yoyWeek}`];
+
+          return {
+            ...g,
+            spend_wow: prev && prev.spend > 0 ? (g.spend - prev.spend) / prev.spend : null,
+            spend_yoy: yoy && yoy.spend > 0 ? (g.spend - yoy.spend) / yoy.spend : null,
+            spend_vs_plan: g.plan_spend > 0 ? (g.spend - g.plan_spend) / g.plan_spend : null,
+            act_wow: prev && prev.activations > 0 ? (g.activations - prev.activations) / prev.activations : null,
+            act_yoy: yoy && yoy.activations > 0 ? (g.activations - yoy.activations) / yoy.activations : null,
+            act_vs_plan: g.plan_activations > 0 ? (g.activations - g.plan_activations) / g.plan_activations : null,
+            cac: g.activations > 0 ? g.spend / g.activations : null,
+          };
+        }).sort((a, b) => b.week.localeCompare(a.week) || a.bu.localeCompare(b.bu) || a.acq.localeCompare(b.acq));
+
+        // Populate filters
+        const bus = [...new Set(rows.map(r => r.bu))].filter(Boolean).sort();
+        const acqs = [...new Set(rows.map(r => r.acq))].filter(Boolean).sort();
+        const fBu = document.getElementById("f-bu");
+        const fAcq = document.getElementById("f-acq");
+        bus.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; fBu.appendChild(o); });
+        acqs.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; fAcq.appendChild(o); });
+
+        const weeks = rows.map(r => r.week).sort();
+        document.getElementById("f-from").value = weeks[Math.max(0, weeks.length - 52)] || weeks[0];
+        document.getElementById("f-to").value = weeks[weeks.length - 1];
+
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("filters").style.display = "flex";
+        document.getElementById("status-bar").style.display = "flex";
+
+        const table = new Tabulator("#table", {
+          data: rows,
+          height: "calc(100vh - 280px)",
+          layout: "fitDataStretch",
+          pagination: true,
+          paginationSize: 50,
+          paginationSizeSelector: [25, 50, 100, 250],
+          movableColumns: true,
+          resizableColumns: true,
+          initialSort: [{column: "week", dir: "desc"}],
+          columnDefaults: { hozAlign: "right" },
+          columns: [
+            {title: "Week", field: "week", hozAlign: "left", frozen: true, width: 110},
+            {title: "BU", field: "bu", hozAlign: "left", frozen: true, width: 100},
+            {title: "Acq Type", field: "acq", hozAlign: "left", frozen: true, width: 100},
+            {
+              title: "Spend",
+              columns: [
+                {title: "Amount", field: "spend", formatter: cell => fmtDollar(cell.getValue()), sorter: "number", width: 120},
+                {title: "WoW", field: "spend_wow", formatter: fmtPctInverse, sorter: "number", width: 90},
+                {title: "YoY", field: "spend_yoy", formatter: fmtPctInverse, sorter: "number", width: 90},
+                {title: "vs Plan", field: "spend_vs_plan", formatter: fmtPctInverse, sorter: "number", width: 90},
+              ]
+            },
+            {
+              title: "Activations (Y1)",
+              columns: [
+                {title: "Count", field: "activations", formatter: cell => fmtNum(cell.getValue()), sorter: "number", width: 110},
+                {title: "WoW", field: "act_wow", formatter: fmtPct, sorter: "number", width: 90},
+                {title: "YoY", field: "act_yoy", formatter: fmtPct, sorter: "number", width: 90},
+                {title: "vs Plan", field: "act_vs_plan", formatter: fmtPct, sorter: "number", width: 90},
+              ]
+            },
+            {title: "CAC", field: "cac", formatter: cell => { const v = cell.getValue(); return v != null ? "$" + v.toFixed(2) : "—"; }, sorter: "number", width: 90},
+            {title: "Plan Spend", field: "plan_spend", formatter: cell => fmtDollar(cell.getValue()), sorter: "number", width: 120},
+            {title: "Plan Acts", field: "plan_activations", formatter: cell => fmtNum(cell.getValue()), sorter: "number", width: 110},
+          ],
+          dataFiltered: function(filters, rows) {
+            document.getElementById("row-count").textContent = rows.length.toLocaleString();
+          },
+        });
+
+        document.getElementById("row-count").textContent = rows.length.toLocaleString();
+
+        function applyFilters() {
+          const bu = fBu.value;
+          const acq = fAcq.value;
+          const from = document.getElementById("f-from").value;
+          const to = document.getElementById("f-to").value;
+          const filters = [];
+          if (bu !== "All") filters.push({field: "bu", type: "=", value: bu});
+          if (acq !== "All") filters.push({field: "acq", type: "=", value: acq});
+          if (from) filters.push({field: "week", type: ">=", value: from});
+          if (to) filters.push({field: "week", type: "<=", value: to});
+          table.setFilter(filters);
+        }
+
+        fBu.addEventListener("change", applyFilters);
+        fAcq.addEventListener("change", applyFilters);
+        document.getElementById("f-from").addEventListener("change", applyFilters);
+        document.getElementById("f-to").addEventListener("change", applyFilters);
+
+        applyFilters();
+      }
+    });
+  </script>
+</body>
+</html>
