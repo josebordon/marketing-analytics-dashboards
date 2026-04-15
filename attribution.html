@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Marketing Performance — Raw Data</title>
+  <title>Attribution Data — Weekly</title>
 
   <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/dist/ag-grid-community.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@32.3.3/styles/ag-grid.css">
@@ -16,7 +16,7 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: #1a1a2e;
-      background: #f8f9fb;
+      background: #fff;
       padding: 32px 48px;
     }
 
@@ -28,15 +28,9 @@
     nav { display: flex; gap: 6px; margin-bottom: 24px; }
 
     nav a {
-      padding: 7px 18px;
-      border-radius: 6px;
-      text-decoration: none;
-      font-size: 0.84rem;
-      font-weight: 600;
-      border: 1px solid #e5e7eb;
-      color: #6b7280;
-      background: #fff;
-      transition: all 0.15s;
+      padding: 7px 18px; border-radius: 6px; text-decoration: none;
+      font-size: 0.84rem; font-weight: 600;
+      border: 1px solid #e5e7eb; color: #6b7280; background: #fff;
     }
 
     nav a:hover { border-color: #4f46e5; color: #4f46e5; }
@@ -56,13 +50,13 @@
 </head>
 <body>
 
-  <h1>Marketing Performance</h1>
-  <p class="subtitle">Raw data from <code>rpt_marketing_performance_to_forecast_daily</code></p>
+  <h1>Attribution Data — Weekly</h1>
+  <p class="subtitle">Pre-aggregated from <code>rpt_marketing_attribution_skan_kpi_daily</code> — grouped by week &times; source &times; segment</p>
 
   <nav>
-    <a href="index.html" class="active">Forecast Raw</a>
+    <a href="index.html">Forecast Raw</a>
     <a href="summary.html">Forecast Pivot</a>
-    <a href="attribution.html">Attribution Data</a>
+    <a href="attribution.html" class="active">Attribution Data</a>
   </nav>
 
   <div class="status-bar" id="status" style="display:none">
@@ -86,7 +80,13 @@
       return Number(v).toLocaleString(undefined, { maximumFractionDigits: 1 });
     }
 
-    Papa.parse("forecast_performance.csv", {
+    function cacFmt(p) {
+      const v = p.value;
+      if (v == null || v === "" || isNaN(v)) return "—";
+      return "$" + Number(v).toFixed(2);
+    }
+
+    Papa.parse("attribution_weekly.csv", {
       download: true,
       header: true,
       dynamicTyping: true,
@@ -98,37 +98,36 @@
         document.getElementById("status").style.display = "flex";
         document.getElementById("n-rows").textContent = data.length.toLocaleString();
 
-        const dates = data.map(d => d.date_et).filter(Boolean).sort();
+        const dates = data.map(d => d.week_start).filter(Boolean).sort();
         document.getElementById("dt-range").textContent = dates[0] + " → " + dates.at(-1);
 
         agGrid.createGrid(document.getElementById("grid"), {
           rowData: data,
           defaultColDef: {
             sortable: true, filter: true, resizable: true,
-            floatingFilter: true, minWidth: 90,
+            floatingFilter: true, minWidth: 80,
           },
           columnDefs: [
-            { headerName: "Date", field: "date_et", pinned: "left", width: 120, filter: "agDateColumnFilter" },
+            { headerName: "Week", field: "week_start", pinned: "left", width: 115 },
             { headerName: "BU", field: "BU", pinned: "left", width: 100 },
+            { headerName: "Platform", field: "platform", width: 100 },
+            { headerName: "Reporting Platform", field: "reporting_platform", width: 140 },
             { headerName: "Acq Type", field: "acquisition_type", width: 110 },
-            { headerName: "Segment", field: "finance_segment_id", width: 100 },
-            { headerName: "Product", field: "finance_product_name", width: 150 },
-            { headerName: "Installs", field: "installs_cnt", valueFormatter: numFmt, type: "numericColumn", width: 110 },
-            { headerName: "Sign-Ups", field: "sign_ups_cnt", valueFormatter: numFmt, type: "numericColumn", width: 110 },
-            { headerName: "Activations (Y1)", field: "first_cashouts_y1_cnt", valueFormatter: numFmt, type: "numericColumn", width: 140 },
-            { headerName: "Mature Acts (Y1)", field: "first_cashouts_mature_y1_cnt", valueFormatter: numFmt, type: "numericColumn", width: 145 },
-            { headerName: "Acts In-Month", field: "first_cashouts_in_month_cnt", valueFormatter: numFmt, type: "numericColumn", width: 130 },
-            { headerName: "Spend", field: "spend_usd_amt", valueFormatter: dollarFmt, type: "numericColumn", width: 120 },
-            { headerName: "Est. Revenue", field: "estimated_future_revenue_amt", valueFormatter: dollarFmt, type: "numericColumn", width: 130 },
-            { headerName: "Plan Spend", field: "planned_spend_usd_amt", valueFormatter: dollarFmt, type: "numericColumn", width: 120 },
-            { headerName: "Plan Acts (Y1)", field: "planned_first_cashouts_y1_cnt", valueFormatter: numFmt, type: "numericColumn", width: 130 },
-            { headerName: "Plan In-Month", field: "planned_first_cashouts_in_month_cnt", valueFormatter: numFmt, type: "numericColumn", width: 135 },
+            { headerName: "Source", field: "source", width: 120 },
+            { headerName: "UA Segment", field: "ua_segment", width: 120 },
+            { headerName: "Publisher Type", field: "publisher_type", width: 120 },
+            { headerName: "Impressions", field: "impressions", valueFormatter: numFmt, type: "numericColumn", width: 120 },
+            { headerName: "Clicks", field: "clicks", valueFormatter: numFmt, type: "numericColumn", width: 100 },
+            { headerName: "Spend", field: "spend", valueFormatter: dollarFmt, type: "numericColumn", width: 110 },
+            { headerName: "Sign-Ups", field: "sign_ups", valueFormatter: numFmt, type: "numericColumn", width: 110 },
+            { headerName: "Activations (D7)", field: "activations_d7", valueFormatter: numFmt, type: "numericColumn", width: 130 },
+            { headerName: "Activations (Y1)", field: "activations_y1", valueFormatter: numFmt, type: "numericColumn", width: 130 },
+            { headerName: "Avg CAC Target", field: "avg_cac_target", valueFormatter: cacFmt, type: "numericColumn", width: 130 },
           ],
           pagination: true,
           paginationPageSize: 100,
           paginationPageSizeSelector: [50, 100, 250, 500],
           animateRows: false,
-          suppressMenuHide: true,
         });
       }
     });
